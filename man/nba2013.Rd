@@ -9,7 +9,7 @@
 }
 \usage{data(nba2013)}
 \format{
-  A data frame with 1229 observations on the following 9 variables.
+  A data frame with 1229 observations on the following 11 variables.
   \describe{
     \item{\code{Date}}{a factor}
     \item{\code{away}}{a factor}
@@ -18,7 +18,9 @@
     \item{\code{partition}}{a numeric vector}
     \item{\code{neutral.site}}{a numeric vector}
     \item{\code{ot.count}}{a numeric vector}
+    \item{\code{home.response}}{a numeric vector}
     \item{\code{home.score}}{a numeric vector}
+    \item{\code{away.response}}{a numeric vector}
     \item{\code{away.score}}{a numeric vector}
   }
 }

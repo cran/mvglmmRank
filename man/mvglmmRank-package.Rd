@@ -11,8 +11,8 @@ Maximum likelihood estimates are obtained via an EM algorithm with either a firs
 \tabular{ll}{
 Package: \tab mvglmmRank\cr
 Type: \tab Package\cr
-Version: \tab 1.0-2\cr
-Date: \tab 2014-06-22\cr
+Version: \tab 1.1-1\cr
+Date: \tab 2015-07-18\cr
 License: \tab GPL-2\cr
 }
 See the help pages for mvglmmRank and game.pred
@@ -23,7 +23,6 @@ Andrew T. Karl and Jennifer Broatch
 Maintainer: Andrew T. Karl <akarl@asu.edu>
 }
 \references{
-Karl, A.T., Broatch, J. (2014). mvglmmRank: An R Package Providing Multivariate Generalized Linear Mixed Models for Evaluating Sporting Teams. \emph{Submitted.} 
 
 Karl, A.T., Yang, Y. and Lohr, S. (2013). Efficient Maximum Likelihood Estimation of Multiple Membership Linear Mixed Models, with an Application to 
     Educational Value-Added Assessments. \emph{Computational Statistics and Data Analysis},  59, 13-27.
@@ -35,10 +34,11 @@ Karl, A.T. (2012). The Sensitivity of College Football Rankings to Several Model
 }
 \keyword{ package }
 \examples{
-## Not run: 
-#data(nfl2012)
-#result <- mvglmmRank(nfl2012,method="PB0",first.order=TRUE,verbose=TRUE)
-#print(result)
-#game.pred(result,home="Denver Broncos",away="Green Bay Packers")
-## End(Not run)
+data(nfl2012)
+mvglmmRank(nfl2012,method="PB0",first.order=TRUE,verbose=TRUE,max.iter.EM=1)
+\donttest{
+result <- mvglmmRank(nfl2012,method="PB0",first.order=TRUE,verbose=TRUE)
+print(result)
+game.pred(result,home="Denver Broncos",away="Green Bay Packers")
+}
 }

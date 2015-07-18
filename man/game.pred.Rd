@@ -48,10 +48,13 @@ Andrew T. Karl and Jennifer Broatch
 
 
 \examples{
-#data(nfl2012)
-#result <- mvglmmRank(nfl2012,method="PB0",first.order=TRUE,verbose=TRUE)
-#print(result)
-#game.pred(result,home="Denver Broncos",away="Green Bay Packers")
+data(nfl2012)
+mvglmmRank(nfl2012,method="PB0",first.order=TRUE,verbose=TRUE,max.iter.EM=1)
+\donttest{
+result <- mvglmmRank(nfl2012,method="PB0",first.order=TRUE,verbose=TRUE)
+print(result)
+game.pred(result,home="Denver Broncos",away="Green Bay Packers")
+}
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

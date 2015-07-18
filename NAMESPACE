@@ -1,8 +1,11 @@
 # Exported functions
-export(mvglmmRank,game.pred)
+export("mvglmmRank","game.pred")
 
 # Imported functions
-import(Matrix)
-importFrom(numDeriv,jacobian)
+import("Matrix")
+importFrom("numDeriv","jacobian")
+importFrom("methods", "as")
+importFrom("stats", "as.formula", "dnorm", "formula", "pnorm")
+importFrom("utils", "flush.console")
 
 

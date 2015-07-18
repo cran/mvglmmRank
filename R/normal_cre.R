@@ -4,9 +4,9 @@ function(Z_mat=Z_mat, first.order=first.order,home.field=home.field, control=con
 if(home.field&!control$OT.flag){
 y_fixed_effects <- formula(~Location+0)
 }else if(home.field&control$OT.flag){
-y_fixed_effects <- formula(~Location+as.factor(OT)+0)   
+y_fixed_effects <- formula(~Location+(OT)+0)   
 }else if(!home.field&control$OT.flag){
-y_fixed_effects <- formula(~as.factor(OT)+0) 
+y_fixed_effects <- formula(~(OT)+0) 
 }else{
 y_fixed_effects <- formula(~1)
 }
@@ -61,7 +61,7 @@ X<-NULL
           rm(H)
           eta<-var.eta%*%t(R_Z)%*%R_R.inv%*%(R_Y-R_X%*%ybetas2)
           log.p.eta <- -(length(eta)/2) * log(2 * pi) - sum(log(diag(G.chol))) - 
-              0.5 * crossprod(eta, G.inv) %*% eta
+              0.5 * crossprod(eta, as(G.inv,"generalMatrix")) %*% eta
           #log.p.y <- sum(dnorm(Y, as.vector(X %*% ybetas + Z %*% 
            #   eta), as.vector(Sig.mat %*% sigmas), log = TRUE))
           log.p.r <- -(Nr/2) * log(2 * pi) + sum(log(diag(chol(R_R.inv)))) - 
@@ -73,78 +73,7 @@ X<-NULL
           attr(res, "eta") <- eta
           res
       }
-      Score <- function(thetas, eta, ybetas, X, Y, Z, cross_Z_j, 
-          X_j, cross_X_j, Y_j, Z_j, Sig.mat, year.count, n_ybeta, 
-          nyear, n_eta, nstudent, nteacher, Kg, cons.logLik, con) {
-          sigmas_sq <- pmax(thetas[(1):(nyear)], 1e-08)
-          G <- thetas[seq(nyear + 1, length(thetas))]
-          G <- reduce.G(G = G, nstudent = nstudent, nyear = nyear, 
-              nteacher = nteacher, Kg = Kg)
-          new.eta <- update.eta(X = X, Y = Y, Z = Z, 
-              cross_Z_j = cross_Z_j, Sig.mat = Sig.mat, ybetas = ybetas, 
-              sigmas = sqrt(sigmas_sq), G = G, nyear = nyear, n_eta = n_eta, 
-              cons.logLik = cons.logLik)
-          eta <- attr(new.eta, "eta")
-          eta.hat <- eta
-          var.eta.hat <- new.eta
-          rm(new.eta)
-          score.sigmas_sq <- as.vector(-1/(2 * sigmas_sq) * year.count + 
-              1/(2 * sigmas_sq^2) * ((t(Sig.mat) %*% (as.vector(Y - 
-                  X %*% ybetas) * as.vector(Y - X %*% ybetas - 
-                  2 * Z %*% eta.hat))) + sapply(cross_Z_j, function(x) sum(diag(x %*% 
-                  var.eta.hat))) + sapply(cross_Z_j, function(x) as.numeric(crossprod(eta.hat, 
-                  x) %*% eta.hat))))
-          temp_mat <- G
-          gam_stu <- temp_mat[1, 1]
-          sv_gam_stu <- 1/gam_stu
-          gam_t <- list()
-          sv_gam_t <- list()
-          index1 <- nstudent
-          for (j in 1:nyear) {
-              gam_t[[j]] <- matrix(0, Kg[j], Kg[j])
-              temp_mat_j <- temp_mat[(index1 + 1):(index1 + nteacher[j] * 
-                  Kg[j]), (index1 + 1):(index1 + nteacher[j] * 
-                  Kg[j])]
-              gam_t[[j]] <- temp_mat_j[1:Kg[j], 1:Kg[j]]
-              sv_gam_t[[j]] <- chol2inv(chol(gam_t[[j]]))
-              index1 <- index1 + nteacher[j] * Kg[j]
-          }
-          rm(j)
-          score_mat <- var.eta.hat + tcrossprod(eta.hat, eta.hat)
-          gam_stu_sc <- sum(diag(score_mat)[1:nstudent])
-          score.eta.stu <- drop(-0.5 * (nstudent * sv_gam_stu - 
-              sv_gam_stu %*% gam_stu_sc %*% sv_gam_stu))
-          score.G <- score.eta.stu * diag(nstudent)
-          gam_t_sc <- list()
-          index1 <- nstudent
-          for (j in 1:nyear) {
-              gam_t_sc[[j]] <- matrix(0, Kg[j], Kg[j])
-              score_mat_j <- score_mat[(index1 + 1):(index1 + nteacher[j] * 
-                  Kg[j]), (index1 + 1):(index1 + nteacher[j] * 
-                  Kg[j])]
-              index2 <- c(1)
-              for (k in 1:nteacher[j]) {
-                  gam_t_sc[[j]] <- gam_t_sc[[j]] + score_mat_j[(index2):(index2 + 
-                    Kg[j] - 1), (index2):(index2 + Kg[j] - 1)]
-                  index2 <- index2 + Kg[j]
-              }
-              index1 <- index1 + nteacher[j] * Kg[j]
-              der <- -0.5 * (nteacher[j] * sv_gam_t[[j]] - sv_gam_t[[j]] %*% 
-                  gam_t_sc[[j]] %*% sv_gam_t[[j]])
-              if (is.numeric(drop(sv_gam_t[[j]]))) {
-                  score.eta.t <- der
-              }
-              else {
-                  score.eta.t <- 2 * der - diag(diag(der))
-              }
-              for (k in 1:nteacher[j]) {
-                  score.G <- bdiag(score.G, score.eta.t)
-              }
-          }
-          rm(j, k)
-          -c(score.sigmas_sq, reduce.G(G = score.G, nstudent = nstudent, 
-              nyear = nyear, nteacher = nteacher, Kg = Kg))
-      }
+  
     update.ybeta <- function(X, Y, Z, R_inv, eta.hat) {
         A.ybeta <- crossprod(X, R_inv) %*% X
         B.ybeta <- crossprod(X, R_inv) %*% (Y - Z %*% eta.hat)
@@ -420,6 +349,120 @@ ybetas2 <- update.ybeta(X=R_X, Y=R_Y, Z=R_Z, R_inv=R_R.inv, eta.hat=eta.hat)
     rownames(eblup) <- rep(teams,each=2)
 }  #end EM
 
+
+
+
+               pattern.f.score <- function(R.i.parm,ybetas,X,Y,Z,Ny) {
+        R_i <- ltriangle(as.vector(R.i.parm))
+         pattern.Rtemplate <- ltriangle(1:(2/2 * (2 + 1)))
+    pattern.diag <- diag(pattern.Rtemplate)
+        pattern.score <- numeric(2/2 * (2 + 1))
+        
+
+            pattern.sum <- matrix(0, 2, 2)
+            for (i in 1:(Ny/2)) {
+                X.t <- X[(1 + (i - 1) * 2):(i * 
+                  2), , drop = FALSE]
+                Y.t <- Y[(1 + (i - 1) * 2):(i * 
+                  2)]
+                Z.t <- Z[(1 + (i - 1) * 2):(i * 
+                  2), , drop = FALSE]      
+                temp.t <- Y.t - X.t %*% ybetas
+                pattern.sum <- pattern.sum + tcrossprod(temp.t) - 
+                  tcrossprod(temp.t, Z.t %*% eta.hat) - tcrossprod(Z.t %*% 
+                  eta.hat, temp.t) + as.matrix(Z.t%*%temp_mat%*%t(Z.t))
+            }
+         pattern.y <- solve(R_i)
+         pattern.score<- -ltriangle(((Ny/2) * pattern.y) -(pattern.y %*% pattern.sum %*% pattern.y))
+            
+         pattern.score<-pattern.score*c(1,.5,1)
+        -pattern.score
+    }
+    
+
+Score <- function(thetas) {
+n_ybeta<-length(ybetas2)
+Ny<-length(R_Y)
+    ybetas <- thetas[1:n_ybeta]
+    R.tri<-R.i.parm <-  thetas[(n_ybeta+1):(n_ybeta+3)]
+    LRI <- length(R.i.parm)
+    #R_i.parm.constrained <- R.i.parm[-LRI]
+    R_i<-ltriangle(R.tri)
+                R <- symmpart(suppressMessages(kronecker(suppressMessages(Diagonal(Ny/2)),
+                R_i)))
+            R_inv <- symmpart(suppressMessages(kronecker(suppressMessages(Diagonal(Ny/2)),
+                chol2inv(chol(R_i)))))
+    G <- thetas[(n_ybeta+4):length(thetas)]
+    G<-kronecker(Diagonal(length(teams)),ltriangle(G))
+    #update.eta returns new var.eta with eta and likelihood as attr()
+      new.eta <- update.eta(X = X, Y = Y, Z = Z, 
+              cross_Z_j = cross_Z_j, Sig.mat = Sig.mat, ybetas = ybetas, 
+              sigmas = sigmas, G = G, nyear = nyear, n_eta = n_eta, 
+              cons.logLik = cons.logLik,R_X = R_X, R_Y = R_Y, R_Z = R_Z, 
+              cross_R_Z_j = cross_R_Z_j, Sig.mat2 = Sig.mat2, ybetas2 = ybetas, 
+              sigmas2 = sigmas2,R_R.inv=R_R.inv)
+    eta <- attr(new.eta, "eta")
+    eta.hat<-eta
+    var.eta <- var.eta.hat <- new.eta
+    eta.hat <- as.vector(eta)
+    temp_mat <- var.eta.hat + tcrossprod(eta.hat, eta.hat)
+   # temp_mat_R <- attr(new.eta, "h.inv") + tcrossprod(eta.hat,
+    #        eta.hat)
+    rm(new.eta)
+        A.ybeta <- crossprod(R_X, R_inv) %*% R_X
+        B.ybeta <- crossprod(R_X, R_inv) %*% (R_Y - R_Z %*% eta.hat)
+    score.y <- as.vector(B.ybeta - A.ybeta %*% ybetas)
+    score.R <- -pattern.f.score(R.i.parm,ybetas2,R_X,R_Y,R_Z,Ny)
+    
+     gam_t_sc <- list()
+        index1 <- 0
+        score.G <- Matrix(0, 0, 0)
+         gam_t_sc <- matrix(0, 2,2)
+         index2 <- c(1)
+         for (k in 1:nteams) {
+                gam_t_sc <- gam_t_sc + temp_mat[(index2):(index2 + 
+                  1), (index2):(index2 + 1)]
+                index2 <- index2 + 2
+            }
+            gam_t <- G[1:2, 1:2]
+            sv_gam_t <- chol2inv(chol(gam_t))
+        der <- -0.5 * (nteams * sv_gam_t - sv_gam_t %*% 
+                gam_t_sc %*% sv_gam_t)
+            if (is.numeric(drop(sv_gam_t))) {
+                score.eta.t <- der
+            }
+            else {
+                score.eta.t <- 2 * der - diag(diag(der))
+            }
+            
+           # for (k in 1:nteams) {
+           #     score.G <- bdiag(score.G, score.eta.t)
+           # }
+        
+      score.G<-ltriangle(score.eta.t)   
+   
+
+           
+    -c(score.y, score.R, score.G)
+}
+
+
+
+
+Hessian<-NULL
+thetas <- c(ybetas2, ltriangle(sigup), reduce.G(G))
+if(control$Hessian){
+cat("\nCalculating Hessian with a central difference approximation...\n")
+flush.console()
+
+Hessian <- symmpart(jacobian(Score, thetas))
+#std_errors <- c(sqrt(diag(solve(Hessian))))
+if(class(try(chol(Hessian),silent=TRUE))=="try-error") cat("\nWarning: Hessian not positive-definite\n")
+}
+
+
+
+
 G.res<-as.matrix(G[1:2,1:2])
 colnames(G.res)<-c("Offense","Defense")
 G.res.cor<-cov2cor(G.res)
@@ -428,6 +471,6 @@ colnames(R.res)<-c("Home","Away")
 R.res.cor<-cov2cor(R.res)
 if(!home.field) ybetas2<-ybetas2[1]
 names(ybetas2)<-colnames(J_X_mat)
-  
-   res<-list(n.ratings.offense=eblup[seq(1,2*nteams,by=2),1],n.ratings.defense=eblup[seq(2,2*nteams,by=2),1],p.ratings.offense=NULL,p.ratings.defense=NULL,b.ratings=NULL,n.mean=ybetas2,p.mean=NULL,b.mean=NULL,G=G.res,G.cor=G.res.cor,R=R.res,R.cor=R.res.cor,home.field=home.field)
+                                                                                                                                                                                                                                                                                                                           
+   res<-list(n.ratings.mov=NULL,n.ratings.offense=eblup[seq(1,2*nteams,by=2),1],n.ratings.defense=eblup[seq(2,2*nteams,by=2),1],p.ratings.offense=NULL,p.ratings.defense=NULL,b.ratings=NULL,n.mean=ybetas2,p.mean=NULL,b.mean=NULL,G=G.res,G.cor=G.res.cor,R=R.res,R.cor=R.res.cor,home.field=home.field,actual=R_Y,pred=R_X%*%ybetas2+R_Z%*%eta.hat,Hessian=Hessian,parameters=thetas)
 }

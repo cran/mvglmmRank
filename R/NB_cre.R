@@ -4,9 +4,9 @@ function(Z_mat=Z_mat, first.order=first.order,home.field=home.field, control=con
 if(home.field&!control$OT.flag){
 y_fixed_effects <- formula(~Location+0)
 }else if(home.field&control$OT.flag){
-y_fixed_effects <- formula(~Location+as.factor(OT)+0)   
+y_fixed_effects <- formula(~Location+(OT)+0)   
 }else if(!home.field&control$OT.flag){
-y_fixed_effects <- formula(~as.factor(OT)+0) 
+y_fixed_effects <- formula(~(OT)+0) 
 }else{
 y_fixed_effects <- formula(~1)
 }
@@ -100,12 +100,13 @@ update.eta <- function(eta, R_X, R_Y, R_Z, rbetas, G, n_eta, cons.logLik,X,Y,Z,c
     }
     rm(product, gr)
     chol.H <- chol(H)
-    log.p.eta <- -(length(eta)/2) * log(2 * pi) - sum(log(diag(G.chol))) - 0.5 * crossprod(eta, G.inv) %*% eta
+    log.p.eta <- -(length(eta)/2) * log(2 * pi) - sum(log(diag(G.chol))) - 0.5 * crossprod(eta, as(G.inv,"generalMatrix")) %*% eta
     log.p.r <- sum(pnorm(as.vector((-1)^(1 - R_Y) * (R_X %*% rbetas + R_Z %*% eta)), log.p = TRUE))
-    log.p.y <- -((2*Nr)/2) * log(2 * pi) + sum(log(diag(chol(R_inv)))) - 0.5 * crossprod(Y - X %*% ybetas - Z %*% eta, R_inv) %*% (Y - X %*% ybetas - Z %*% eta)
+    log.p.y <- -((Ny)/2) * log(2 * pi) + sum(log(diag(chol(R_inv)))) - 0.5 * crossprod(Y - X %*% ybetas - Z %*% eta, R_inv) %*% (Y - X %*% ybetas - Z %*% eta)
     res <- var.eta
     attr(res, "likelihood") <- as.vector(cons.logLik + log.p.eta  +log.p.y+ log.p.r - 0.5 * (2 * sum(log(diag(chol.H)))))
     attr(res, "eta") <- eta
+   # attr(res, "h.inv") <- H.inv
     res
 }
 
@@ -177,10 +178,11 @@ nteams<-length(teams)
 R_mat <- Z_mat
 #number of measured scores
 Nr <- length(R_mat$home_win)
+Ny <- 2*Nr
 
 Y<-c(t(cbind(Z_mat$Score.For,Z_mat$Score.Against)))
 
-RE_mat <- Matrix(0,2*Nr,2*length(teams))
+RE_mat <- Matrix(0,Ny,2*length(teams))
 colnames(RE_mat)<-rep(teams,each=2)
 
 R_RE_mat <- Matrix(0,Nr,length(teams))
@@ -196,8 +198,27 @@ R_X_mat <- R_X_mat[, !(colSums(abs(R_X_mat)) == 0), drop = FALSE]
     if (rankMatrix(R_X_mat,method = 'qrLINPACK')[1] != dim(R_X_mat)[2]) {
         stop("WARNING: Fixed-effects design matrix not full-rank")
     }
+    
+R_X <- Matrix(R_X_mat)
+R_Y <- as.vector(R_mat$home_win)
 n_eta <- 3*length(teams)
 n_rbeta <- dim(R_X_mat)[2]
+
+if(any(R_Y==2)){
+tie.indx<-which(R_Y==2)
+X.tie<-R_X[tie.indx,,drop=FALSE]
+Z.tie<-R_RE_mat[tie.indx,,drop=FALSE]
+R_Y<-R_Y[-tie.indx]
+R_X<-R_X[-tie.indx,,drop=FALSE]
+R_RE_mat<-R_RE_mat[-tie.indx,,drop=FALSE]
+for(i in 1:length(tie.indx)){
+R_Y<-c(R_Y,1,0)
+R_X<-rBind(R_X,X.tie[i,,drop=FALSE],X.tie[i,,drop=FALSE])
+R_RE_mat<-rBind(R_RE_mat,Z.tie[i,,drop=FALSE],Z.tie[i,,drop=FALSE])
+}
+Nr <- length(R_Y)
+}
+
 
 #offense then defense
 
@@ -207,7 +228,7 @@ n_rbeta <- dim(R_X_mat)[2]
   J_mat<-as.data.frame(J_mat)
   templ<-rep(Z_mat$neutral.site,each=2)
   templ2<-rep("Neutral Site",length(templ))
-  for(i in 1:(2*Nr)){
+  for(i in 1:(Ny)){
   if(templ[i]==0&i%%2==1)
   templ2[i]<-"Home"
   if(templ[i]==0&i%%2==0)
@@ -234,7 +255,7 @@ X_mat <- sparse.model.matrix(y_fixed_effects, J_mat, drop.unused.levels = TRUE)
 
 n_ybeta<-ncol(X_mat)
 
-new_yz <- Matrix(0, 2*Nr, n_eta)
+new_yz <- Matrix(0, Ny, n_eta)
 new_rz <- Matrix(0, Nr, n_eta)
 y.indicator <- rep(c(1,1,0),length(teams))
 
@@ -255,8 +276,7 @@ new_rz[, r_i] <- R_RE_mat
 #The results are loaded into the Z matricies
 #Z[[]] and R_Z[[]] below -----------------------
 FE.count<-0
-R_X <- Matrix(R_X_mat)
-R_Y <- as.vector(R_mat$home_win)
+
 R_Z <- Matrix(new_rz)
 t_R_Z <- t(R_Z)
 cross_R_Z <- crossprod(R_Z)
@@ -279,7 +299,7 @@ rbetas<-rbetasn <- rep(0,ncol(R_X))
 #these next few lines are used to populate
 #comp.list, a list of components needed for
 #the E-step update (not all n_eta^2 are needed)
-dummy_mat <- kronecker(Diagonal(length(teams)),matrix(1,3,3))
+dummy_mat <- suppressMessages(kronecker(Diagonal(length(teams)),matrix(1,3,3)))
 dummy_mat<-dummy_mat + t(Z)%*%Z
 dummy_mat <- drop0(triu(dummy_mat))
 comp.list <- which(abs(dummy_mat) > 1e-10, arr.ind = TRUE)
@@ -289,7 +309,7 @@ y.mat <- Matrix(0, iter, n_ybeta)
 r.mat <- Matrix(0, iter, n_rbeta)
 time.mat <- Matrix(0, iter, 1)
 G.mat <- Matrix(0, iter, 6)
-R<-R_inv<-Diagonal(2*Nr)
+R<-R_inv<-Diagonal(Ny)
 ybetas <- update.ybeta(X=X, Y=Y, Z=Z, R_inv=R_inv, eta.hat=eta.hat)
 names(ybetas)<-colnames(X_mat)
 R.mat<-Matrix(0,iter,3)
@@ -481,12 +501,12 @@ rbetasn <- update.rbetas.first.order(eta = eta, rbetas = rbetas, R_X=R_X, R_Y=R_
      gt1<-gt1+temp_mat[(3*(i-1)+1):(3*i),(3*(i-1)+1):(3*i)]
     }
     gt1<-symmpart(gt1/length(teams))
-    Gn<-kronecker(Diagonal(length(teams)),gt1)
+    Gn<-suppressMessages(kronecker(Diagonal(length(teams)),gt1))
     sigup<-matrix(0,2,2)
-for(i in 1:Nr){
+for(i in 1:(Ny/2)){
 yb<-Y[(2*i-1):(2*i)]
 xb<-X[(2*i-1):(2*i),,drop=TRUE]
-zb<-Z[(2*i-1):(2*i),]
+zb<-Z[(2*i-1):(2*i),,drop=FALSE]
 if(home.field){
 yxb<-yb-xb%*%ybetas
 }else{
@@ -494,7 +514,7 @@ yxb<-as.matrix(yb-rep(ybetas,2))
 }
 sigup<-suppressWarnings(sigup+suppressMessages(tcrossprod(yxb))-yxb%*%t(zb%*%eta.hat)- (zb%*%eta.hat)%*%t(yxb)+zb%*%temp_mat%*%t(zb))
 }
-sigup<-symmpart(sigup/Nr)
+sigup<-symmpart(sigup/(Ny/2))
 
     R<-suppressMessages(kronecker(Diagonal(nrow(J_mat)/2),sigup))
     R_inv<-suppressMessages(kronecker(Diagonal(nrow(J_mat)/2),solve(sigup)))
@@ -520,6 +540,126 @@ sigup<-symmpart(sigup/Nr)
 }  #end EM
 
 
+               pattern.f.score <- function(R.i.parm) {
+        R_i <- ltriangle(as.vector(R.i.parm))
+         pattern.Rtemplate <- ltriangle(1:(2/2 * (2 + 1)))
+    pattern.diag <- diag(pattern.Rtemplate)
+        pattern.score <- numeric(2/2 * (2 + 1))
+        
+
+            pattern.sum <- matrix(0, 2, 2)
+            for (i in 1:(Ny/2)) {
+                X.t <- X[(1 + (i - 1) * 2):(i * 
+                  2), , drop = FALSE]
+                Y.t <- Y[(1 + (i - 1) * 2):(i * 
+                  2)]
+                Z.t <- Z[(1 + (i - 1) * 2):(i * 
+                  2), , drop = FALSE]      
+                temp.t <- Y.t - X.t %*% ybetas
+                pattern.sum <- suppressWarnings(pattern.sum + tcrossprod(temp.t) - 
+                  tcrossprod(temp.t, Z.t %*% eta.hat) - tcrossprod(Z.t %*% 
+                  eta.hat, temp.t) + as.matrix(Z.t%*%temp_mat%*%t(Z.t)))
+            }
+         pattern.y <- solve(R_i)
+         pattern.score<- -ltriangle(((Ny/2) * pattern.y) -(pattern.y %*% pattern.sum %*% pattern.y))
+            
+         pattern.score<-pattern.score*c(1,.5,1)
+        -pattern.score
+    }
+    
+
+Score <- function(thetas) {
+    ybetas <- thetas[1:n_ybeta]
+    if(home.field){
+      rbetas <- thetas[(n_ybeta + 1):(n_ybeta + 1)]
+    if(dim(R_X)[2]==2) rbetas<-c(rbetas,0)
+    R.tri<-R.i.parm <-  thetas[(n_ybeta+2):(n_ybeta+4)]
+    }else{
+    rbetas <- rep(0,ncol(R_X))
+    R.tri<-R.i.parm <-  thetas[(n_ybeta+1):(n_ybeta+3)] 
+    }
+    LRI <- length(R.i.parm)
+    #R_i.parm.constrained <- R.i.parm[-LRI]
+    R_i<-ltriangle(R.tri)
+                R <- symmpart(suppressMessages(kronecker(suppressMessages(Diagonal(Ny/2)),
+                R_i)))
+            R_inv <- symmpart(suppressMessages(kronecker(suppressMessages(Diagonal(Ny/2)),
+                chol2inv(chol(R_i)))))
+    if(home.field){
+    G <- thetas[(n_ybeta+5):length(thetas)]
+    }else{
+     G <- thetas[(n_ybeta+4):length(thetas)]
+    }
+    G<-suppressMessages(kronecker(Diagonal(length(teams)),ltriangle(G)))
+    #update.eta returns new var.eta with eta and likelihood as attr()
+    new.eta <- update.eta(eta = eta.hat, R_X = R_X, R_Y = R_Y, R_Z = R_Z,rbetas = rbetas, G = G, n_eta = n_eta, cons.logLik = cons.logLik,X=X,Y=Y,Z=Z,cross_Z=cross_Z,R_inv=R_inv,ybetas=ybetas)
+    eta <- attr(new.eta, "eta")
+    eta.hat<-eta
+    var.eta <- var.eta.hat <- new.eta
+    eta.hat <- as.vector(eta)
+    temp_mat <- var.eta.hat + tcrossprod(eta.hat, eta.hat)
+   # temp_mat_R <- attr(new.eta, "h.inv") + tcrossprod(eta.hat,
+    #        eta.hat)
+    rm(new.eta)
+        A.ybeta <- crossprod(X, R_inv) %*% X
+        B.ybeta <- crossprod(X, R_inv) %*% (Y - Z %*% eta.hat)
+    score.y <- as.vector(B.ybeta - A.ybeta %*% ybetas)
+   if(home.field) score.r <- Sc.rbetas.f.first.order(eta = eta, rbetas = rbetas, R_X = R_X, R_Y = R_Y, R_Z = R_Z)[1]          
+    score.R <- -pattern.f.score(R.i.parm)
+    
+     gam_t_sc <- list()
+        index1 <- 0
+        score.G <- Matrix(0, 0, 0)
+         gam_t_sc <- matrix(0, 3,3)
+         index2 <- c(1)
+         for (k in 1:nteams) {
+                gam_t_sc <- gam_t_sc + temp_mat[(index2):(index2 + 
+                  2), (index2):(index2 + 2)]
+                index2 <- index2 + 3
+            }
+            gam_t <- G[1:3, 1:3]
+            sv_gam_t <- chol2inv(chol(gam_t))
+        der <- -0.5 * (nteams * sv_gam_t - sv_gam_t %*% 
+                gam_t_sc %*% sv_gam_t)
+            if (is.numeric(drop(sv_gam_t))) {
+                score.eta.t <- der
+            }
+            else {
+                score.eta.t <- 2 * der - diag(diag(der))
+            }
+            
+           # for (k in 1:nteams) {
+           #     score.G <- bdiag(score.G, score.eta.t)
+           # }
+        
+      score.G<-ltriangle(score.eta.t)   
+                                             
+
+     if(home.field){      
+    -c(score.y, score.r, score.R, score.G)
+    }else{
+     -c(score.y, score.R, score.G)
+    }
+}
+
+
+if(home.field){
+thetas <- c(ybetas, rbetas[1], ltriangle(sigup), reduce.G(G))
+names(thetas)<-c(colnames(X),"Binary mean","R[1,1]","R[2,1]","R[2,2]","G[1,1]","G[2,1]","G[3,1]","G[2,2]","G[3,2]","G[3,3]")
+}else{
+thetas <- c(ybetas, ltriangle(sigup), reduce.G(G))
+names(thetas)<-c("Mean Score","R[1,1]","R[2,1]","R[2,2]","G[1,1]","G[2,1]","G[3,1]","G[2,2]","G[3,2]","G[3,3]")
+}
+
+Hessian<-NULL
+if(control$Hessian){
+cat("\nCalculating Hessian with a central difference approximation...\n")
+flush.console()
+Hessian <- symmpart(jacobian(Score, thetas))
+rownames(Hessian)<-colnames(Hessian)<-names(thetas)
+#std_errors <- c(sqrt(diag(solve(Hessian))))
+if(class(try(chol(Hessian),silent=TRUE))=="try-error") cat("\nWarning: Hessian not positive-definite\n")
+}
 
 
 G.res<-as.matrix(G[1:3,1:3])
@@ -530,5 +670,5 @@ colnames(R.res)<-c("Home","Away")
 R.res.cor<-cov2cor(R.res)
 names(ybetas)<-colnames(X_mat)
 names(rbetas)[1]<-c("LocationHome")  
-   res<-list(n.ratings.offense=eblup[seq(1,3*nteams,by=3),1],n.ratings.defense=eblup[seq(2,3*nteams,by=3),1],p.ratings.offense=NULL,p.ratings.defense=NULL,b.ratings=eblup[seq(3,3*nteams,by=3),1],n.mean=ybetas,p.mean=NULL,b.mean=rbetas[1],G=G.res,G.cor=G.res.cor,R=R.res,R.cor=R.res.cor,home.field=home.field)
+   res<-list(n.ratings.mov=NULL,n.ratings.offense=eblup[seq(1,3*nteams,by=3),1],n.ratings.defense=eblup[seq(2,3*nteams,by=3),1],p.ratings.offense=NULL,p.ratings.defense=NULL,b.ratings=eblup[seq(3,3*nteams,by=3),1],n.mean=ybetas,p.mean=NULL,b.mean=rbetas[1],G=G.res,G.cor=G.res.cor,R=R.res,R.cor=R.res.cor,home.field=home.field,actual=Y,pred=X%*%ybetas+Z%*%eta.hat,Hessian=Hessian,parameters=thetas)
 }

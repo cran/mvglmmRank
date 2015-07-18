@@ -7,9 +7,9 @@ nteams <- length(teams)
 if(home.field&!control$OT.flag){
 j_fixed_effects <- formula(~Location+0)
 }else if(home.field&control$OT.flag){
-j_fixed_effects <- formula(~Location+as.factor(OT)+0)   
+j_fixed_effects <- formula(~Location+(OT)+0)   
 }else if(!home.field&control$OT.flag){
-j_fixed_effects <- formula(~as.factor(OT)+0) 
+j_fixed_effects <- formula(~(OT)+0) 
 }else{
 j_fixed_effects <- formula(~1)
 }
@@ -147,7 +147,7 @@ update.eta <- function(eta, J_X, J_Y, J_Z, jbetas, G, nyear, n_eta, cons.logLik,
     }
     rm(product, gr)
     chol.H <- chol(H)
-    log.p.eta <- -(length(eta)/2) * log(2 * pi) - sum(log(diag(G.chol))) - 0.5 * crossprod(eta, G.inv) %*% eta
+    log.p.eta <- -(length(eta)/2) * log(2 * pi) - sum(log(diag(G.chol))) - 0.5 * crossprod(eta, as(G.inv,"generalMatrix")) %*% eta
     log.p.j <- sum(jder0(J_X %*% jbetas + J_Z %*% eta,J_Y))
     log.p.r <- sum(pnorm(as.vector((-1)^(1 - R_Y) * (R_X %*% rbetas + R_Z %*% eta)), log.p = TRUE))
     res <- var.eta
@@ -307,6 +307,21 @@ R_X <- Matrix(R_X_mat)
 
 R_Y <- as.vector(R_mat$home_win)
 
+if(any(R_Y==2)){
+tie.indx<-which(R_Y==2)
+X.tie<-R_X[tie.indx,,drop=FALSE]
+Z.tie<-R_RE_mat[tie.indx,,drop=FALSE]
+R_Y<-R_Y[-tie.indx]
+R_X<-R_X[-tie.indx,,drop=FALSE]
+R_RE_mat<-R_RE_mat[-tie.indx,,drop=FALSE]
+for(i in 1:length(tie.indx)){
+R_Y<-c(R_Y,1,0)
+R_X<-rBind(R_X,X.tie[i,,drop=FALSE],X.tie[i,,drop=FALSE])
+R_RE_mat<-rBind(R_RE_mat,Z.tie[i,,drop=FALSE],Z.tie[i,,drop=FALSE])
+}
+Nr <- length(R_Y)
+}
+
 J_RE_mat <- Matrix(0,2*Nj,2*nteams)
 colnames(J_RE_mat)<-rep(teams,each=2)
 #offense then defense
@@ -345,7 +360,7 @@ if(game.effect) n_eta<- 3*nteams + Nj
 n_jbeta <- dim(J_X_mat)[2]
 
 
-new_jz <- Matrix(0, 2*Nr, 3*nteams)
+new_jz <- Matrix(0, 2*Nj, 3*nteams)
 new_rz <- Matrix(0, Nr, 3*nteams)
 j.indicator <- rep(c(1,1,0),length(teams))
 
@@ -383,7 +398,8 @@ cons.logLik <- 0.5 * n_eta * log(2 * pi)
 L1.conv <- FALSE
 L2.conv <- FALSE
 L1.conv.it <- 0
-jbetas<-log(as.vector(solve(crossprod(J_X))%*%t(J_X)%*%J_Y))
+suppressWarnings(jbetas<-log(as.vector(solve(crossprod(J_X))%*%t(J_X)%*%J_Y)))
+jbetas[is.na(jbetas)]<-.001
 rbetas <- rep(0,ncol(R_X_mat))
 iter <- control$iter.EM
 j.mat <- Matrix(0, iter, n_jbeta)
@@ -616,5 +632,161 @@ G.res.cor<-cov2cor(G.res)
 
 names(jbetas)<-colnames(J_X_mat)
 names(rbetas)[1]<-c("LocationHome")
-   res<-list(n.ratings.offense=NULL,n.ratings.defense=NULL,p.ratings.offense=eblup[seq(1,3*nteams,by=3),1],p.ratings.defense=eblup[seq(2,3*nteams,by=3),1],b.ratings=eblup[seq(3,3*nteams,by=3),1],n.mean=NULL,p.mean=jbetas,b.mean=rbetas[1],G=G.res,G.cor=G.res.cor,R=NULL,R.cor=NULL,home.field=home.field)
+
+
+
+Score <- function(thetas) {
+n_ybeta<-length(jbetas)
+Ny<-length(J_Y)
+    ybetas <- thetas[1:n_ybeta]
+    if(home.field){
+    rbetas<-c(thetas[n_ybeta+1])
+    rbetas<-c(rbetas,rep(0,ncol(R_X)-1))
+    G <- thetas[(n_ybeta+2):length(thetas)]
+    }else{
+    G <- thetas[(n_ybeta+1):length(thetas)]    
+    rep(0,ncol(R_X))
+    }
+    G<-suppressMessages(kronecker(Diagonal(length(teams)),ltriangle(G)))
+ new.eta <- update.eta(eta = eta.hat, J_X = J_X, J_Y = J_Y, J_Z = J_Z,jbetas = ybetas, G = G, n_eta = n_eta, cons.logLik = cons.logLik, R_Z=R_Z,R_Y=R_Y,R_X=R_X,rbetas=rbetas)
+   
+    eta <- attr(new.eta, "eta")
+    eta.hat<-eta
+    var.eta <- var.eta.hat <- new.eta
+    eta.hat <- as.vector(eta)
+    temp_mat <- var.eta.hat + tcrossprod(eta.hat, eta.hat)
+   # temp_mat_R <- attr(new.eta, "h.inv") + tcrossprod(eta.hat,
+    #        eta.hat)
+    rm(new.eta)
+    if(home.field){
+      score.r <- Sc.rbetas.f.first.order(eta, rbetas, R_X, R_Y, R_Z)
+    }
+      score.y <- Sc.jbetas.f.first.order(eta, ybetas, J_X, J_Y, J_Z)
+    
+     gam_t_sc <- list()
+        index1 <- 0
+        score.G <- Matrix(0, 0, 0)
+         gam_t_sc <- matrix(0, 3,3)
+         index2 <- c(1)
+         for (k in 1:nteams) {
+                gam_t_sc <- gam_t_sc + temp_mat[(index2):(index2 + 
+                  2), (index2):(index2 + 2)]
+                index2 <- index2 + 3
+            }
+            gam_t <- G[1:3, 1:3]
+            sv_gam_t <- chol2inv(chol(gam_t))
+        der <- -0.5 * (nteams * sv_gam_t - sv_gam_t %*% 
+                gam_t_sc %*% sv_gam_t)
+            if (is.numeric(drop(sv_gam_t))) {
+                score.eta.t <- der
+            }
+            else {
+                score.eta.t <- 2 * der - diag(diag(der))
+            }
+            
+           # for (k in 1:nteams) {
+           #     score.G <- bdiag(score.G, score.eta.t)
+           # }
+        
+      score.G<-ltriangle(score.eta.t)  
+   
+
+     if(home.field){      
+    -c(score.y, score.r[1], score.G)
+    }else{
+     -c(score.y, score.G)
+    }
+}
+
+Score.ge <- function(thetas) {
+n_ybeta<-length(jbetas)
+Ny<-length(J_Y)
+    ybetas <- thetas[1:n_ybeta]
+    if(home.field){
+    rbetas<-c(thetas[n_ybeta+1])
+    rbetas<-c(rbetas,rep(0,ncol(R_X)-1))
+    G <- thetas[(n_ybeta+2):length(thetas)]
+    }else{
+    G <- thetas[(n_ybeta+1):length(thetas)]    
+    rep(0,ncol(R_X))
+    }
+      G<-bdiag(suppressMessages(kronecker(Diagonal(length(teams)),bdiag(ltriangle(G[1:6])))),Diagonal(Nj)*G[7])
+ new.eta <- update.eta(eta = eta.hat, J_X = J_X, J_Y = J_Y, J_Z = J_Z,jbetas = ybetas, G = G, n_eta = n_eta, cons.logLik = cons.logLik, R_Z=R_Z,R_Y=R_Y,R_X=R_X,rbetas=rbetas)
+   
+    eta <- attr(new.eta, "eta")
+    eta.hat<-eta
+    var.eta <- var.eta.hat <- new.eta
+    eta.hat <- as.vector(eta)
+    temp_mat <- var.eta.hat + tcrossprod(eta.hat, eta.hat)
+   # temp_mat_R <- attr(new.eta, "h.inv") + tcrossprod(eta.hat,
+    #        eta.hat)
+    rm(new.eta)
+    if(home.field){
+      score.r <- Sc.rbetas.f.first.order(eta, rbetas, R_X, R_Y, R_Z)
+    }
+      score.y <- Sc.jbetas.f.first.order(eta, ybetas, J_X, J_Y, J_Z)
+    
+         gam_t_sc <- list()
+        index1 <- 0
+        score.G <- Matrix(0, 0, 0)
+         gam_t_sc <- matrix(0, 3,3)
+         index2 <- c(1)
+         for (k in 1:nteams) {
+                gam_t_sc <- gam_t_sc + temp_mat[(index2):(index2 + 
+                  2), (index2):(index2 + 2)]
+                index2 <- index2 + 3
+            }
+         #gam_t_sc<-bdiag(gam_t_sc,))   
+            gam_t <- G[1:3, 1:3]
+            sv_gam_t <- chol2inv(chol(gam_t))
+        der <- -0.5 * (nteams * sv_gam_t - sv_gam_t %*% 
+                gam_t_sc %*% sv_gam_t)
+            if (is.numeric(drop(sv_gam_t))) {
+                score.eta.t <- der
+            }
+            else {
+                score.eta.t <- 2 * der - diag(diag(der))
+            }
+          der.g <- as.numeric(-0.5 * (Nj * solve(G[n_eta,n_eta]) - solve(G[n_eta,n_eta]) * 
+                sum(diag(temp_mat)[(3*nteams+1):n_eta] * solve(G[n_eta,n_eta]))))
+  
+        score.G<-c(ltriangle(score.eta.t),der.g)   
+   
+
+     if(home.field){      
+    -c(score.y, score.r[1], score.G)
+    }else{
+     -c(score.y, score.G)
+    }
+}
+
+if(home.field){
+thetas <- c(jbetas,rbetas[1], reduce.G(G))
+names(thetas)<-c(colnames(J_X),"Binary mean","G[1,1]","G[2,1]","G[3,1]","G[2,2]","G[3,2]","G[3,3]")
+if(game.effect)  names(thetas)<-c(colnames(J_X),"Binary mean","G[1,1]","G[2,1]","G[3,1]","G[2,2]","G[3,2]","G[3,3]","G[4,4]")
+}else{
+thetas <- c(jbetas, reduce.G(G))
+names(thetas)<-c("Mean Score","G[1,1]","G[2,1]","G[3,1]","G[2,2]","G[3,2]","G[3,3]")
+if(game.effect)  names(thetas)<-c("Mean Score","G[1,1]","G[2,1]","G[3,1]","G[2,2]","G[3,2]","G[3,3]","G[4,4]")
+}
+
+Hessian<-NULL
+if(control$Hessian){
+cat("\nCalculating Hessian with a central difference approximation...\n")
+flush.console()
+if(game.effect){
+Hessian <- symmpart(jacobian(Score.ge, thetas))
+rownames(Hessian)<-colnames(Hessian)<-names(thetas)
+}else{
+Hessian <- symmpart(jacobian(Score, thetas))
+rownames(Hessian)<-colnames(Hessian)<-names(thetas)
+}
+#std_errors <- c(sqrt(diag(solve(Hessian))))
+if(class(try(chol(Hessian),silent=TRUE))=="try-error") cat("\nWarning: Hessian not positive-definite\n")
+}
+
+
+
+
+   res<-list(n.ratings.mov=NULL,n.ratings.offense=NULL,n.ratings.defense=NULL,p.ratings.offense=eblup[seq(1,3*nteams,by=3),1],p.ratings.defense=eblup[seq(2,3*nteams,by=3),1],b.ratings=eblup[seq(3,3*nteams,by=3),1],n.mean=NULL,p.mean=jbetas,b.mean=rbetas[1],G=G.res,G.cor=G.res.cor,R=NULL,R.cor=NULL,home.field=home.field,Hessian=Hessian,parameters=thetas)
 }

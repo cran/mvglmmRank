@@ -9,13 +9,15 @@
 }
 \usage{data(nfl2012)}
 \format{
-  A data frame with 256 observations on the following 7 variables.
+  A data frame with 256 observations on the following 9 variables.
   \describe{
     \item{\code{Date}}{a factor}
     \item{\code{away}}{a factor} 
     \item{\code{home}}{a factor} 
     \item{\code{neutral.site}}{a numeric vector}
+    \item{\code{home.response}}{a numeric vector}
     \item{\code{home.score}}{a numeric vector}
+    \item{\code{away.response}}{a numeric vector}
     \item{\code{away.score}}{a numeric vector}
     \item{\code{partition}}{a numeric vector}
   }

@@ -9,7 +9,7 @@
 }
 \usage{data(ncaab2012)}
 \format{
-  A data frame with 5253 observations on the following 8 variables.
+  A data frame with 5253 observations on the following 10 variables.
   \describe{
     \item{\code{date}}{a factor}
     \item{\code{away}}{a factor}
@@ -17,7 +17,9 @@
     \item{\code{neutral.site}}{a numeric vector}
     \item{\code{partition}}{a numeric vector}
     \item{\code{home_win}}{a numeric vector}
+    \item{\code{home.response}}{a numeric vector}
     \item{\code{home.score}}{a numeric vector}
+    \item{\code{away.response}}{a numeric vector}
     \item{\code{away.score}}{a numeric vector}
   }
 }

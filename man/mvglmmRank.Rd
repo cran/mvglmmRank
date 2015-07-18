@@ -10,27 +10,30 @@ This function fits a (multivariate) generalized linear mixed model to team score
 \usage{
 mvglmmRank(game.data, method = "PB0", first.order = FALSE, 
 home.field = TRUE, max.iter.EM = 1000, tol1 = 1e-04, 
-tol2 = 1e-04, tolFE = 0, tol.n = 1e-07, verbose = TRUE, OT.flag=FALSE)
+tol2 = 1e-04, tolFE = 0, tol.n = 1e-07, verbose = TRUE, OT.flag = FALSE, Hessian = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{game.data}{
 a data frame that contains a column "home" of team names, a column "away" of team names,
-a column "home.score" containing the scores of the "home" teams, a column "away.score"
-containing the scores of the "away" teams, and (optionally) a column "neutral.site" which 
-takes the value 1 for neutral site games and 0 otherwise. NOTE: For neutral site games, randomly
-assign the teams as "home" or "away". As noted below, the data frame may optionally contain a column,
-OT, which indicates how many overtime periods were played. NOTE: the game.data$OT column should not contain
-missing data. If there was no overtime, specify "none" or 0.
+a column "home.response" containing the scores (or other response) of the "home" teams, a column "away.response"
+containing the scores (or other response) of the "away" teams, (optionally) a column "binary.response" that contains a column of binary responses (0's and 1's), and (optionally) a column "neutral.site" which 
+takes the value 1 for neutral site games and 0 otherwise. 
+NOTE: If game.data does not contain a "binary.response" column, then an indicator will be created
+for whether the home team won.
+NOTE: For neutral site games, randomly assign the teams as "home" or "away". As noted below, the data frame may optionally contain a column,
+OT, which indicates how many overtime periods were played. 
+NOTE: the game.data$OT column should not contain missing data. If there was no overtime, specify "none" or 0.
 }
   \item{method}{
 a character (remember to use quotation marks!). Choices are "N", "P0", "P1", "B",
-"NB", "PB0", "PB1". "N" indicates the scores are fit with a normal distribution with intra-game
+"NB", "PB0", "PB1", or "NB.mov". "N" indicates the scores are fit with a normal distribution with intra-game
 correlation between the home and away teams accounted for in an unstructured 2x2 error covariance matrix.
 "P" indicates the scores are fit with a Poisson distribution. "B" indicates the home win/loss indicators are
 fit using a binary distribution with a probit link. The presence of a "1" with a "P" indicates
 potential intra-game correlation is modeled with an additional game-level random effect. A "0"
-indicates no such random effects are included.
+indicates no such random effects are included. "NB.mov" fits the margin of victory of the "home" team (under an assumed normal distribution) 
+jointly with the binary win/loss indicators.
 }
   \item{first.order}{
 logical. TRUE requests that only a first order Laplace approximation be used, FALSE
@@ -66,9 +69,10 @@ at iteration \eqn{k}.
 logical. If TRUE, model information will be printed after each iteration.
 }
   \item{OT.flag}{
-logical. If TRUE, then there should be a column OT in game.data that indicates how many overtime periods there were for each game. game.data$OT.flag will be converted to a 
-categorical factor, and included in the (normal or Poisson) score models. The information will not be used for the binary models. NOTE: the game.data$OT column should not contain
-missing data. If there was no overtime, specify "none" or 0.
+logical. If TRUE, then there should be a continuous column OT in game.data that indicates how many overtime periods there were for each game. The information will not be used for the binary models. NOTE: the game.data$OT column should not contain  missing data. If there was no overtime, specify 0.
+}
+\item{Hessian}{
+logical. If TRUE, the Hessian of the model parameters is calculated via a central difference approximation.
 }
 }
 \details{
@@ -82,7 +86,7 @@ changes is <= tolFE. At this point, the program continues using the complete ful
 until the maximum relative parameter change is <= tol2. If tolFE < tol2, then the program will finish without applying fully exponential corrections to the random effects covariance matrix.
 
 method="PB1" is the least scalable, as the memory and computational requirements for this model are at least O((teams+number of games)^2). In the example data included with the package, the
-NCAA basketball data is very slow with the fully exponential approximation and method="PB1".
+NCAA basketball data is slow with the fully exponential approximation and method="PB1".
 }
 \value{
 mvglmmRank returns an object of class \code{mvglmmRank}
@@ -104,11 +108,12 @@ An object of class \code{mvglmmRank} is a list containing the following componen
 \item{R}{Error covariance matrix for normal model, or NULL if normal model not used.}
 \item{R.cor}{Error correlation matrix for normal model, or NULL if normal model not used.}
 \item{home.field}{Logical indicating whether or not a home field effect was modeled.}
+\item{Hessian}{The Hessian of the model parameters, if requested.}
+\item{parameters}{A vector of fitted model parameters.}
 
 The function  \code{\link{game.pred}} may be used to predict the outcome of future games.
 }
 \references{
-Karl, A.T., Broatch, J. (2014). mvglmmRank: An R Package Providing Multivariate Generalized Linear Mixed Models for Evaluating Sporting Teams. \emph{Submitted.} 
 
 Karl, A.T., Yang, Y. and Lohr, S. (2013). Efficient Maximum Likelihood Estimation of Multiple Membership Linear Mixed Models, with an Application to 
     Educational Value-Added Assessments. \emph{Computational Statistics and Data Analysis},  59, 13-27.
@@ -128,12 +133,13 @@ Andrew T. Karl \email{akarl@asu.edu}, Jennifer Broatch
 See also \code{\link{game.pred}}
 }
 \examples{
-##Not Run
-#data(nfl2012)
-#result <- mvglmmRank(nfl2012,method="PB0",first.order=TRUE,verbose=TRUE)
-#print(result)
-#game.pred(result,home="Denver Broncos",away="Green Bay Packers")
-
+data(nfl2012)
+mvglmmRank(nfl2012,method="PB0",first.order=TRUE,verbose=TRUE,max.iter.EM=1)
+\donttest{
+result <- mvglmmRank(nfl2012,method="PB0",first.order=TRUE,verbose=TRUE)
+print(result)
+game.pred(result,home="Denver Broncos",away="Green Bay Packers")
+}
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

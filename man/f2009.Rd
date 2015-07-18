@@ -14,7 +14,9 @@
     \item{\code{home}}{a factor}
     \item{\code{Game.Date}}{a POSIXlt date variable}
     \item{\code{away}}{a factor}
+    \item{\code{home.response}}{a numeric vector}
     \item{\code{home.score}}{a numeric vector}
+    \item{\code{away.response}}{a numeric vector}
     \item{\code{away.score}}{a numeric vector}
     \item{\code{neutral.site}}{a numeric vector}
     \item{\code{partition}}{a numeric vector}
