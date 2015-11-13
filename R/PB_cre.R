@@ -775,10 +775,10 @@ if(control$Hessian){
 cat("\nCalculating Hessian with a central difference approximation...\n")
 flush.console()
 if(game.effect){
-Hessian <- symmpart(jacobian(Score.ge, thetas))
+Hessian <- symmpart(jacobian(Score.ge, thetas, method="simple"))
 rownames(Hessian)<-colnames(Hessian)<-names(thetas)
 }else{
-Hessian <- symmpart(jacobian(Score, thetas))
+Hessian <- symmpart(jacobian(Score, thetas, method="simple"))
 rownames(Hessian)<-colnames(Hessian)<-names(thetas)
 }
 #std_errors <- c(sqrt(diag(solve(Hessian))))

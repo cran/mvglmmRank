@@ -455,7 +455,7 @@ if(control$Hessian){
 cat("\nCalculating Hessian with a central difference approximation...\n")
 flush.console()
 
-Hessian <- symmpart(jacobian(Score, thetas))
+Hessian <- symmpart(jacobian(Score, thetas, method="simple"))
 #std_errors <- c(sqrt(diag(solve(Hessian))))
 if(class(try(chol(Hessian),silent=TRUE))=="try-error") cat("\nWarning: Hessian not positive-definite\n")
 }
@@ -471,6 +471,15 @@ colnames(R.res)<-c("Home","Away")
 R.res.cor<-cov2cor(R.res)
 if(!home.field) ybetas2<-ybetas2[1]
 names(ybetas2)<-colnames(J_X_mat)
+
+sresid=NULL
+cresid=NULL
+    mresid <- try(as.numeric(R_Y - R_X %*% ybetas2))
+    cresid <- try(as.numeric(mresid - R_Z %*% eta.hat))
+    yhat <- try(as.numeric(R_X %*% ybetas2 + R_Z %*% eta.hat))
+    rchol <- try(chol(R_R.inv))
+    yhat.s <- try(as.vector(rchol %*% (yhat)))
+    sresid <- try(as.vector(rchol %*% R_Y - yhat.s))
                                                                                                                                                                                                                                                                                                                            
-   res<-list(n.ratings.mov=NULL,n.ratings.offense=eblup[seq(1,2*nteams,by=2),1],n.ratings.defense=eblup[seq(2,2*nteams,by=2),1],p.ratings.offense=NULL,p.ratings.defense=NULL,b.ratings=NULL,n.mean=ybetas2,p.mean=NULL,b.mean=NULL,G=G.res,G.cor=G.res.cor,R=R.res,R.cor=R.res.cor,home.field=home.field,actual=R_Y,pred=R_X%*%ybetas2+R_Z%*%eta.hat,Hessian=Hessian,parameters=thetas)
+   res<-list(n.ratings.mov=NULL,n.ratings.offense=eblup[seq(1,2*nteams,by=2),1],n.ratings.defense=eblup[seq(2,2*nteams,by=2),1],p.ratings.offense=NULL,p.ratings.defense=NULL,b.ratings=NULL,n.mean=ybetas2,p.mean=NULL,b.mean=NULL,G=G.res,G.cor=G.res.cor,R=R.res,R.cor=R.res.cor,home.field=home.field,actual=R_Y,pred=R_X%*%ybetas2+R_Z%*%eta.hat,Hessian=Hessian,parameters=thetas,sresid=sresid)
 }

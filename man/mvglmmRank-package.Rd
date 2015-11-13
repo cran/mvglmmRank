@@ -11,8 +11,8 @@ Maximum likelihood estimates are obtained via an EM algorithm with either a firs
 \tabular{ll}{
 Package: \tab mvglmmRank\cr
 Type: \tab Package\cr
-Version: \tab 1.1-1\cr
-Date: \tab 2015-07-18\cr
+Version: \tab 1.1-2\cr
+Date: \tab 2015-11-10\cr
 License: \tab GPL-2\cr
 }
 See the help pages for mvglmmRank and game.pred

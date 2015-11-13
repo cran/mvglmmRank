@@ -574,9 +574,9 @@ flush.console()
 names(thetas)<-c(colnames(J_X),"G[1,1]","G[2,1]","G[2,2]")
 if(game.effect) names(thetas)<-c(colnames(J_X),"G[1,1]","G[2,1]","G[2,2]","G[3,3]")
 if(game.effect){
-Hessian <- symmpart(jacobian(Score.ge, thetas))
+Hessian <- symmpart(jacobian(Score.ge, thetas, method="simple"))
 }else{
-Hessian <- symmpart(jacobian(Score, thetas))
+Hessian <- symmpart(jacobian(Score, thetas, method="simple"))
 }
 rownames(Hessian)<-colnames(Hessian)<-names(thetas)
 #std_errors <- c(sqrt(diag(solve(Hessian))))

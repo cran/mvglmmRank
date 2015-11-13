@@ -619,7 +619,7 @@ Hessian<-NULL
 if(control$Hessian){
 cat("\nCalculating Hessian with a central difference approximation...\n")
 flush.console()
-Hessian <- symmpart(jacobian(Score, thetas))
+Hessian <- symmpart(jacobian(Score, thetas, method="simple"))
 rownames(Hessian)<-colnames(Hessian)<-names(thetas)
 #std_errors <- c(sqrt(diag(solve(Hessian))))
 if(class(try(chol(Hessian),silent=TRUE))=="try-error") cat("\nWarning: Hessian not positive-definite\n")

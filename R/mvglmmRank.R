@@ -66,7 +66,6 @@ function (game.data, method = "PB0",first.order = FALSE, home.field=TRUE, max.it
         return(0)
     }
     res<-c(res,method=method)
-    if(!is.null(res$Hessian))  res$Hessian <- -1 * res$Hessian
     class(res) <- "mvglmmRank"
     return(res)
 }

@@ -1,3 +1,12 @@
+Version 1.1-2: 2015-11-10
+
+	- Changed option method="Richardson" to method="simple" for jacobian function
+	from package numDeriv
+
+	- Changed the sign of the Hessian
+
+	- Now reports scaled conditional residuals for models N and NB
+
 Version 1.0-2: 2014-06-22
 
         - First public release.
