@@ -316,8 +316,8 @@ R_X<-R_X[-tie.indx,,drop=FALSE]
 R_RE_mat<-R_RE_mat[-tie.indx,,drop=FALSE]
 for(i in 1:length(tie.indx)){
 R_Y<-c(R_Y,1,0)
-R_X<-rBind(R_X,X.tie[i,,drop=FALSE],X.tie[i,,drop=FALSE])
-R_RE_mat<-rBind(R_RE_mat,Z.tie[i,,drop=FALSE],Z.tie[i,,drop=FALSE])
+R_X<-rbind(R_X,X.tie[i,,drop=FALSE],X.tie[i,,drop=FALSE])
+R_RE_mat<-rbind(R_RE_mat,Z.tie[i,,drop=FALSE],Z.tie[i,,drop=FALSE])
 }
 Nr <- length(R_Y)
 }
@@ -351,7 +351,7 @@ jred<- -1*sparse.model.matrix(as.formula(~defense+0),data=J_mat)
 
 J_RE_mat[,seq(1,2*nteams,by=2)]<-jreo
 J_RE_mat[,seq(2,2*nteams,by=2)]<-jred
-#if(game.effect) J_RE_mat<-cBind(J_RE_mat,sparse.model.matrix(as.formula(~game+0),data=J_mat))
+#if(game.effect) J_RE_mat<-cbind(J_RE_mat,sparse.model.matrix(as.formula(~game+0),data=J_mat))
 J_X_mat <- sparse.model.matrix(j_fixed_effects, J_mat, drop.unused.levels = TRUE)
 
 
@@ -382,14 +382,14 @@ new_rz[, r_i] <- R_RE_mat
 FE.count<-0
 J_X <- Matrix(J_X_mat)
 J_Z <- Matrix(new_jz)
-if(game.effect) J_Z<-cBind(J_Z,sparse.model.matrix(as.formula(~game+0),data=J_mat))
+if(game.effect) J_Z<-cbind(J_Z,sparse.model.matrix(as.formula(~game+0),data=J_mat))
 t_J_Z <- t(J_Z)
 cross_J_Z <- crossprod(J_Z)
 R_Z <- Matrix(new_rz)
-if(game.effect) R_Z<-cBind(R_Z,Matrix(0,nrow(R_Z),length(unique(J_mat$game))))
+if(game.effect) R_Z<-cbind(R_Z,Matrix(0,nrow(R_Z),length(unique(J_mat$game))))
 t_R_Z <- t(R_Z)
 cross_R_Z <- crossprod(R_Z)
-#if(game.effect) J_RE_mat<-cBind(J_RE_mat,sparse.model.matrix(as.formula(~game+0),data=J_mat))
+#if(game.effect) J_RE_mat<-cbind(J_RE_mat,sparse.model.matrix(as.formula(~game+0),data=J_mat))
 #initialize parameters
 eta.hat <- trc.y1 <- numeric(n_eta)
 var.eta.hat <- Matrix(0, n_eta, n_eta)
@@ -497,9 +497,9 @@ for (it in 1:iter) {
                      if (check.parmFE1 & check.parmFE2| FE.count > 0) {
               if(indx.5==n_eta) cat("Calculating FE corrections for random effects covariance matrix...\n")
               FE.count <- FE.count + 1
-                    res.temp <- cBind(guide2, mapply(Trace.calc2, comp.k = guide2[, 1], comp.l = guide2[, 2], MoreArgs = list(dsig.dc.indx5, indx.5 = indx.5)))
+                    res.temp <- cbind(guide2, mapply(Trace.calc2, comp.k = guide2[, 1], comp.l = guide2[, 2], MoreArgs = list(dsig.dc.indx5, indx.5 = indx.5)))
                     temp.comp <- temp.comp[-(guide1), , drop = FALSE]
-                    var.corrections <- rBind(var.corrections, res.temp)
+                    var.corrections <- rbind(var.corrections, res.temp)
                     }
    
                   }
@@ -536,7 +536,7 @@ rbetasn <- update.rbetas.first.order(eta = eta, rbetas = rbetas, R_X=R_X, R_Y=R_
       var.eta <- var.eta + 0.5 * trc.y2
       rm(trc.y2)
       var.eta.hat <- var.eta
-      eblup <- as.matrix(cBind(eta.hat, sqrt(diag(var.eta.hat))))
+      eblup <- as.matrix(cbind(eta.hat, sqrt(diag(var.eta.hat))))
 
       colnames(eblup) <- c("eblup", "std. error")
       if(!game.effect) rownames(eblup) <- c(rep(teams,each=3))
@@ -610,7 +610,7 @@ rbetasn <- update.rbetas.first.order(eta = eta, rbetas = rbetas, R_X=R_X, R_Y=R_
         it.time <- (proc.time() - ptm)[3]
       time.mat[it, ] <- c(it.time)
       cat("Iteration", it, "took", it.time, "\n")
-      eblup <- cBind(eta.hat, sqrt(diag(var.eta.hat)))
+      eblup <- cbind(eta.hat, sqrt(diag(var.eta.hat)))
 
       colnames(eblup) <- c("eblup", "std. error")
       if(!game.effect) rownames(eblup) <- c(rep(teams,each=3))
@@ -747,8 +747,8 @@ Ny<-length(J_Y)
             else {
                 score.eta.t <- 2 * der - diag(diag(der))
             }
-          der.g <- as.numeric(-0.5 * (Nj * solve(G[n_eta,n_eta]) - solve(G[n_eta,n_eta]) * 
-                sum(diag(temp_mat)[(3*nteams+1):n_eta] * solve(G[n_eta,n_eta]))))
+          der.g <- as.numeric(-0.5 * (Nj * as.vector(solve(G[n_eta,n_eta])) - as.vector(solve(G[n_eta,n_eta]) * 
+                sum(diag(temp_mat)[(3*nteams+1):n_eta] * c(solve(G[n_eta,n_eta]))))))
   
         score.G<-c(ltriangle(score.eta.t),der.g)   
    

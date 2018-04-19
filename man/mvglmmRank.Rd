@@ -10,7 +10,8 @@ This function fits a (multivariate) generalized linear mixed model to team score
 \usage{
 mvglmmRank(game.data, method = "PB0", first.order = FALSE, 
 home.field = TRUE, max.iter.EM = 1000, tol1 = 1e-04, 
-tol2 = 1e-04, tolFE = 0, tol.n = 1e-07, verbose = TRUE, OT.flag = FALSE, Hessian = FALSE)
+tol2 = 1e-04, tolFE = 0, tol.n = 1e-07, verbose = TRUE, OT.flag = FALSE, 
+Hessian = FALSE, REML.N=FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -27,13 +28,14 @@ NOTE: the game.data$OT column should not contain missing data. If there was no o
 }
   \item{method}{
 a character (remember to use quotation marks!). Choices are "N", "P0", "P1", "B",
-"NB", "PB0", "PB1", or "NB.mov". "N" indicates the scores are fit with a normal distribution with intra-game
+"NB", "PB0", "PB1", "NB.mov", or "N.mov". "N" indicates the scores are fit with a normal distribution with intra-game
 correlation between the home and away teams accounted for in an unstructured 2x2 error covariance matrix.
 "P" indicates the scores are fit with a Poisson distribution. "B" indicates the home win/loss indicators are
 fit using a binary distribution with a probit link. The presence of a "1" with a "P" indicates
 potential intra-game correlation is modeled with an additional game-level random effect. A "0"
 indicates no such random effects are included. "NB.mov" fits the margin of victory of the "home" team (under an assumed normal distribution) 
-jointly with the binary win/loss indicators.
+jointly with the binary win/loss indicators.  "N.mov" fits only the margin of victory of the "home" team (under an assumed normal distribution). See the NOTES section below 
+for further details.
 }
   \item{first.order}{
 logical. TRUE requests that only a first order Laplace approximation be used, FALSE
@@ -74,6 +76,8 @@ logical. If TRUE, then there should be a continuous column OT in game.data that 
 \item{Hessian}{
 logical. If TRUE, the Hessian of the model parameters is calculated via a central difference approximation.
 }
+\item{REML.N}{logical. If TRUE and if method=="N.mov" or method=="N", then REML estimation is used instead of ML.
+}
 }
 \details{
 Setting first.order=TRUE will yield the first order Laplace approximation. A partial fully exponential Laplace approximation can be obtained by setting tol1 > tol2 and tolFE=0. This
@@ -110,10 +114,14 @@ An object of class \code{mvglmmRank} is a list containing the following componen
 \item{home.field}{Logical indicating whether or not a home field effect was modeled.}
 \item{Hessian}{The Hessian of the model parameters, if requested.}
 \item{parameters}{A vector of fitted model parameters.}
+\item{N.output}{\code{NULL}, or a list if \code{method="N"} or \code{method="N.mov"}. In the later cases, the list contains the random effect design matrix \code{Z},
+the fixed effects design matrix \code{X}, the esitmated random effects covariance matrix \code{G}, the estimated error covariance matrix \code{R}, the predicted random effects \code{eta}, the joint covariance matrix of fixed and random effects \code{ybetas_eblup_asycov}, the covariance matrix of the fixed effects only \code{ybetas_asycov}, and the standard errrors of the fixed effects \code{ybetas_stderror}.}
+\item{fixed.effect.model.output}{\code{NULL}, or a list if \code{method="N.mov"}. In the later case, the list contains information about the results of fitting the margin of victory model with fixed (instead of random) team effects: the fixed effect design matrix \code{X}, the fixed effect parameter estimates \code{beta}, logical indicating whether or not the home field effect is estimable \code{is.mean.estimable} (see Notes), the predicted margins of victory \code{pred}, the residuals \code{resid}, the fitted model variance \code{sigma.sq}, and the covariance matrix of the random effects \code{beta.covariance}.  }
 
 The function  \code{\link{game.pred}} may be used to predict the outcome of future games.
 }
 \references{
+Broatch, J.E. and Karl, A.T. (2017). Multivariate Generalized Linear Mixed Models for Joint Estimation of Sporting Outcomes. \emph{Italian Journal of Applied Statistics}. To appear. Also available from https://arxiv.org/abs/1710.05284.
 
 Karl, A.T., Yang, Y. and Lohr, S. (2013). Efficient Maximum Likelihood Estimation of Multiple Membership Linear Mixed Models, with an Application to 
     Educational Value-Added Assessments. \emph{Computational Statistics and Data Analysis},  59, 13-27.

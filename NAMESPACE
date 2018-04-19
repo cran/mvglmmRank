@@ -7,5 +7,6 @@ importFrom("numDeriv","jacobian")
 importFrom("methods", "as")
 importFrom("stats", "as.formula", "dnorm", "formula", "pnorm")
 importFrom("utils", "flush.console")
+importFrom("MASS", "ginv")
 
 

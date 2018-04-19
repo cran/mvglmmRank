@@ -76,12 +76,14 @@ update.eta <- function(eta, R_X, R_Y, R_Z, rbetas, G, nyear, n_eta, cons.logLik)
     var.eta <- as.matrix(solve(H))
     product <- matrix(rep(1, n_eta), n_eta, 1)
     gr <- rep(1, n_eta)
-    while (as.numeric(gr %*% product) > 1e-08) {
+    gr.loop.it<-1
+    while (as.numeric(gr %*% product) > 1e-08&gr.loop.it<10) {
         gr <- gr.eta(eta = eta, R_X = R_X, R_Y = R_Y, R_Z = R_Z, rbetas = rbetas,  G.inv = G.inv, n_eta = n_eta)
         product <- var.eta %*% gr
         eta <- eta - product
         H <- H.eta(eta = eta, rbetas = rbetas, R_X = R_X, R_Y = R_Y, R_Z = R_Z, G.inv = G.inv,  n_eta = n_eta)
         var.eta <- as.matrix(solve(H))
+        gr.loop.it<-gr.loop.it+1
     }
     rm(product, gr)
     chol.H <- chol(H)
@@ -120,11 +122,13 @@ update.rbetas <- function(eta, var.eta, rbetas, R_X, R_Y, R_Z, n_eta) {
     Svar2 <- Svar * R_Z
     product <- matrix(rep(1, length(rbetas)), length(rbetas), 1)
     scrbetas <- rep(1, length(rbetas))
-    while (as.numeric(scrbetas %*% product) > 1e-08) {
+    rbeta.it.count<-1
+    while (as.numeric(scrbetas %*% product) > 1e-08& rbeta.it.count<10) {
         Hrbetas <- as.matrix(jacobian(Sc.rbetas.f, rbetas, method = "simple", eta = eta, R_X = R_X, R_Y = R_Y, R_Z = R_Z, n_eta = n_eta, Svar = Svar, Svar2 = Svar2))
         scrbetas <- Sc.rbetas.f(eta, rbetas, R_X, R_Y, R_Z, n_eta, Svar = Svar, Svar2 = Svar2)
         product <- c(solve(Hrbetas, scrbetas))
         rbetas <- rbetas - product
+        rbeta.it.count<- rbeta.it.count + 1
     }
     rm(Svar, Svar2, scrbetas, product)
     rbetas
@@ -252,8 +256,8 @@ R_X<-R_X[-tie.indx,,drop=FALSE]
 R_Z<-R_Z[-tie.indx,,drop=FALSE]
 for(i in 1:length(tie.indx)){
 R_Y<-c(R_Y,1,0)
-R_X<-rBind(R_X,X.tie[i,,drop=FALSE],X.tie[i,,drop=FALSE])
-R_Z<-rBind(R_Z,Z.tie[i,,drop=FALSE],Z.tie[i,,drop=FALSE])
+R_X<-rbind(R_X,X.tie[i,,drop=FALSE],X.tie[i,,drop=FALSE])
+R_Z<-rbind(R_Z,Z.tie[i,,drop=FALSE],Z.tie[i,,drop=FALSE])
 }
 t_R_Z <- t(R_Z)
 cross_R_Z <- crossprod(R_Z)
@@ -285,10 +289,11 @@ lgLik <- numeric(iter)
 L1.conv <- FALSE
 L2.conv <- FALSE
 L1.conv.it <- 0
+#save(list = ls(all = TRUE), file = "test31518.RData",envir=environment())   
 #Begin EM algorithm
 for (it in 1:iter) {
     ptm <- proc.time()
-    rm(var.eta.hat)
+    #rm(var.eta.hat)
 
     new.eta <- update.eta(eta = eta.hat, R_X = R_X, R_Y = R_Y, R_Z = R_Z,rbetas = rbetas, G = G, n_eta = n_eta, cons.logLik = cons.logLik)
 
@@ -378,9 +383,9 @@ for (it in 1:iter) {
               if (check.parmFE1 & check.parmFE2  | FE.count > 0) {
               if(indx.5==n_eta)cat("Calculating FE corrections for random effects covariance matrix...\n")
               FE.count <- FE.count + 1
-                    res.temp <- cBind(guide2, mapply(Trace.calc2, comp.k = guide2[, 1], comp.l = guide2[, 2], MoreArgs = list(dsig.dc.indx5, indx.5 = indx.5)))
+                    res.temp <- cbind(guide2, mapply(Trace.calc2, comp.k = guide2[, 1], comp.l = guide2[, 2], MoreArgs = list(dsig.dc.indx5, indx.5 = indx.5)))
                     temp.comp <- temp.comp[-(guide1), , drop = FALSE]
-                    var.corrections <- rBind(var.corrections, res.temp)
+                    var.corrections <- rbind(var.corrections, res.temp)
                     }
    
                   }
@@ -410,7 +415,7 @@ rbetasn <- update.rbetas.first.order(eta = eta, rbetas = rbetas, R_X=R_X, R_Y=R_
     var.eta <- var.eta + 0.5 * trc.y2
     rm(trc.y2)
     var.eta.hat <- var.eta
-    eblup <- as.matrix(cBind(eta.hat, sqrt(diag(var.eta.hat))))
+    eblup <- as.matrix(cbind(eta.hat, sqrt(diag(var.eta.hat))))
     colnames(eblup) <- c("eblup", "std. error")
     rownames(eblup) <- teams
     rm(var.eta)
@@ -464,7 +469,7 @@ rbetasn <- update.rbetas.first.order(eta = eta, rbetas = rbetas, R_X=R_X, R_Y=R_
     it.time <- (proc.time() - ptm)[3]
     time.mat[it, ] <- c(it.time)
     cat("Iteration", it, "took", it.time, "\n")
-    eblup <- cBind(eta.hat, sqrt(diag(var.eta.hat)))
+    eblup <- cbind(eta.hat, sqrt(diag(var.eta.hat)))
     colnames(eblup) <- c("eblup", "std. error")
     rownames(eblup) <- teams
 }  #end EM
@@ -488,10 +493,10 @@ rownames(Hessian)<-colnames(Hessian)<-names(thetas)
 if(class(try(chol(Hessian),silent=TRUE))=="try-error") cat("\nWarning: Hessian not positive-definite\n")
 }
 
-
+model.matrices=list(X=R_X,Y=R_Y,Z=R_Z,G=G,eta=eta.hat,beta=rbetas)
 
             G.res<-as.matrix(G[1,1])
 colnames(G.res)<-c("Rating")
 G.res.cor<-cov2cor(G.res)
- res<-list(n.ratings.mov=NULL,n.ratings.offense=NULL,n.ratings.defense=NULL,p.ratings.offense=NULL,p.ratings.defense=NULL,b.ratings=eblup[,1],n.mean=NULL,p.mean=NULL,b.mean=rbetas[1],G=G.res,G.cor=G.res.cor,R=NULL, R.cor=NULL,home.field=home.field,Hessian=Hessian,parameters=thetas)
+ res<-list(n.ratings.mov=NULL,n.ratings.offense=NULL,n.ratings.defense=NULL,p.ratings.offense=NULL,p.ratings.defense=NULL,b.ratings=eblup[,1],n.mean=NULL,p.mean=NULL,b.mean=rbetas[1],G=G.res,G.cor=G.res.cor,R=NULL, R.cor=NULL,home.field=home.field,Hessian=Hessian,parameters=thetas,model.matrices=model.matrices)
 }

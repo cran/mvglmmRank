@@ -11,8 +11,8 @@ Maximum likelihood estimates are obtained via an EM algorithm with either a firs
 \tabular{ll}{
 Package: \tab mvglmmRank\cr
 Type: \tab Package\cr
-Version: \tab 1.1-2\cr
-Date: \tab 2015-11-10\cr
+Version: \tab 1.2-1\cr
+Date: \tab 2018-04-18\cr
 License: \tab GPL-2\cr
 }
 See the help pages for mvglmmRank and game.pred
@@ -23,6 +23,7 @@ Andrew T. Karl and Jennifer Broatch
 Maintainer: Andrew T. Karl <akarl@asu.edu>
 }
 \references{
+Broatch, J.E. and Karl, A.T. (2017). Multivariate Generalized Linear Mixed Models for Joint Estimation of Sporting Outcomes. \emph{Italian Journal of Applied Statistics}. To appear. Also available from https://arxiv.org/abs/1710.05284.
 
 Karl, A.T., Yang, Y. and Lohr, S. (2013). Efficient Maximum Likelihood Estimation of Multiple Membership Linear Mixed Models, with an Application to 
     Educational Value-Added Assessments. \emph{Computational Statistics and Data Analysis},  59, 13-27.

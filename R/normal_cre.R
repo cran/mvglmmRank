@@ -27,7 +27,7 @@ X<-NULL
 
         h.r<-crossprod(R_Z, R_R.inv) %*% R_Z
         
-          (h.eta + h.r)
+          symmpart(h.eta + h.r)
       }
       ltriangle <- function(x) {
           if (!is.null(dim(x)[2])) {
@@ -53,13 +53,28 @@ X<-NULL
               cross_R_Z_j, Sig.mat2, ybetas2, 
               sigmas2,R_R.inv) {
           G.chol <- chol(G)
-          G.inv <- chol2inv(G.chol)
+          G.inv <- symmpart(chol2inv(G.chol))
           H <- H.eta(sigmas = sigmas, cross_Z_j = cross_Z_j, Sig.mat = Sig.mat, 
               G.inv = G.inv, nyear = nyear, n_eta = n_eta, sigmas2=sigmas2,cross_R_Z_j=cross_R_Z_j,Sig.mat2=Sig.mat2,R_R.inv)
           chol.H <- chol(H)
-          var.eta <- as.matrix(solve(H))
+          H.inv <- symmpart(chol2inv(chol.H))
+          
+            c.temp <- crossprod(R_X, R_R.inv ) %*% R_Z
+            c.1 <- rbind(crossprod(R_X, R_R.inv ) %*% R_X, t(c.temp))
+            c.2 <- rbind(c.temp, H)
+            C_inv <- cbind(c.1, c.2)
+            chol.C_inv <- chol(forceSymmetric(symmpart(C_inv)))
+            cs <- symmpart(chol2inv(chol.C_inv))
+            C12<-as.matrix(cs[1:length(ybetas2),(length(ybetas2)+1):ncol(cs)])
+            C.mat <- cs[-c(1:length(ybetas2)),-c(1:length(ybetas2))]
+            betacov<-as.matrix(cs[c(1:length(ybetas2)),c(1:length(ybetas2))])
+            if (control$REML.N) {
+            var.eta <- C.mat
+          } else {
+            var.eta <- H.inv
+          }
           rm(H)
-          eta<-var.eta%*%t(R_Z)%*%R_R.inv%*%(R_Y-R_X%*%ybetas2)
+          eta<-H.inv%*% as.vector(crossprod(R_Z, R_R.inv)  %*%(R_Y-R_X%*%ybetas2))
           log.p.eta <- -(length(eta)/2) * log(2 * pi) - sum(log(diag(G.chol))) - 
               0.5 * crossprod(eta, as(G.inv,"generalMatrix")) %*% eta
           #log.p.y <- sum(dnorm(Y, as.vector(X %*% ybetas + Z %*% 
@@ -68,9 +83,18 @@ X<-NULL
             0.5 * crossprod(R_Y - R_X %*% ybetas2 - R_Z %*% eta, R_R.inv) %*% 
                 (R_Y - R_X %*% ybetas2 - R_Z %*% eta)
           res <- var.eta
-          attr(res, "likelihood") <- as.vector(cons.logLik + log.p.eta + 
-              log.p.r - 0.5 * (2 * sum(log(diag(chol.H)))))
+          if (control$REML.N) {
+            attr(res, "likelihood") <- as.vector(cons.logLik + log.p.eta + 
+                                                   log.p.r - 0.5 * (2 * sum(log(diag(chol.C_inv)))))
+         
+ 
+          } else {
+            attr(res, "likelihood") <- as.vector(cons.logLik + log.p.eta + 
+                                                   log.p.r - 0.5 * (2 * sum(log(diag(chol.H)))))
+          }  
           attr(res, "eta") <- eta
+          attr(res, "betacov") <- betacov
+          attr(res, "C12") <- C12
           res
       }
   
@@ -205,7 +229,11 @@ eta.hat <- numeric(n_eta)
 var.eta.hat <- Matrix(0, n_eta, n_eta)
 G <- 100*Diagonal(n_eta)
 R_R<-R_R.inv<-Diagonal(nrow(J_mat))
-cons.logLik <- 0.5 * n_eta * log(2 * pi)
+if (control$REML.N) {
+  cons.logLik <- 0.5 * (n_eta + ncol(R_X)) * log(2 * pi)
+} else {
+  cons.logLik <- 0.5 * (n_eta) * log(2 * pi)
+}
 #Partition desigin matrices by year and
 #calculate initial parameter values
 # from data
@@ -246,6 +274,9 @@ for (it in 1:iter) {
     trc.y2 <- Matrix(0, n_eta, n_eta)
     G.mat[it, ] <- reduce.G(G)
     eta <- as.vector(attr(new.eta, "eta"))
+    C12 <- attr(new.eta, "C12")
+    betacov <- matrix(attr(new.eta, "betacov"),nrow=length(ybetas2))
+
     var.eta <- new.eta
         eta.hat <- as.vector(eta)
         var.eta.hat <- var.eta
@@ -260,6 +291,7 @@ for (it in 1:iter) {
                       lgLik[it - 1]), "\n")
         cat("n.mean:", round(ybetas2, 4), "\n")
         cat("G:", reduce.G(G),"\n")
+        cat("R:", ltriangle(suppressWarnings(suppressMessages(as.matrix(R_R[1:2,1:2])))),"\n")
   
     }
     if (it > 5) {
@@ -277,6 +309,7 @@ for (it in 1:iter) {
                     cat("n.mean:", round(ybetas2, 4), "\n")
                   
                              cat("G:", reduce.G(G),"\n")
+                             cat("R:", ltriangle(suppressWarnings(suppressMessages(as.matrix(R_R[1:2,1:2])))),"\n")
                       flush.console()
                     }
                     rm(j)
@@ -303,7 +336,7 @@ for (it in 1:iter) {
     
   
 
-    eblup <- as.matrix(cBind(eta.hat, sqrt(diag(var.eta.hat))))
+    eblup <- as.matrix(cbind(eta.hat, sqrt(diag(var.eta.hat))))
     colnames(eblup) <- c("eblup", "std. error")
     rownames(eblup) <- rep(teams,each=2)
     rm(var.eta)
@@ -312,7 +345,7 @@ for (it in 1:iter) {
     #The following steps update the G
     # matrix
     
-    temp_mat <- var.eta.hat + tcrossprod(eta.hat, eta.hat)
+    temp_mat <- symmpart(var.eta.hat + tcrossprod(eta.hat, eta.hat))
     gt1<-gt2<-matrix(0,2,2)
     for(i in 1:length(teams)){
      gt1<-gt1+temp_mat[(2*(i-1)+1):(2*i),(2*(i-1)+1):(2*i)]
@@ -330,21 +363,49 @@ yxb<-yb-xb%*%ybetas2
 }else{
 yxb<-as.matrix(yb-rep(ybetas2,2))
 }
+
+
+if(control$REML.N){
+
+  
+  sigup<- suppressWarnings(sigup+suppressMessages(tcrossprod(yxb))-yxb%*%t(zb%*%eta.hat)- (zb%*%eta.hat)%*%t(yxb)+zb%*%temp_mat%*%t(zb)+xb%*%betacov%*%t(xb)+2*xb%*%C12%*%t(zb))
+  
+}else{
 sigup<- suppressWarnings(sigup+suppressMessages(tcrossprod(yxb))-yxb%*%t(zb%*%eta.hat)- (zb%*%eta.hat)%*%t(yxb)+zb%*%temp_mat%*%t(zb))
 }
+}
 sigup<-symmpart(sigup/(nrow(J_mat)/2))
+if(!control$REML.N){
 ybetas2 <- update.ybeta(X=R_X, Y=R_Y, Z=R_Z, R_inv=R_R.inv, eta.hat=eta.hat)
+}
 
     #if(home_field) ybetas2[colnames(R_X)=="LocationNeutral Site"]<-0
 
     R_R<-suppressMessages(kronecker(Diagonal(nrow(J_mat)/2),sigup))
     R_R.inv<-suppressMessages(kronecker(Diagonal(nrow(J_mat)/2),solve(sigup)))
     G <- Gn
+    
+    if(control$REML.N){   
+    G.chol <- chol(G)
+    G.inv <- chol2inv(G.chol)
+    R.inv.Z <- R_R.inv %*% R_Z
+    V.1 <- symmpart(chol2inv(chol(G.inv + t(R_Z) %*% R.inv.Z)))
+    tX.Rinv.Z <- t(R_X) %*% R.inv.Z
+    tX.Rinv.X <- t(R_X) %*% R_R.inv %*% R_X
+
+    ybetas2 <-
+      as.vector(chol2inv(chol(forceSymmetric(
+        symmpart(tX.Rinv.X -
+                   tX.Rinv.Z %*% V.1 %*% t(tX.Rinv.Z))
+      ))) %*% (t(R_X) %*% R_R.inv -
+                 tX.Rinv.Z %*% V.1 %*% t(R.inv.Z)) %*% R_Y)
+    } 
+    
     rm(Gn)
     it.time <- (proc.time() - ptm)[3]
     time.mat[it, ] <- c(it.time)
     cat("Iteration", it, "took", it.time, "\n")
-    eblup <- cBind(eta.hat, sqrt(diag(var.eta.hat)))
+    eblup <- cbind(eta.hat, sqrt(diag(var.eta.hat)))
     colnames(eblup) <- c("eblup", "std. error")
     rownames(eblup) <- rep(teams,each=2)
 }  #end EM
@@ -368,9 +429,19 @@ ybetas2 <- update.ybeta(X=R_X, Y=R_Y, Z=R_Z, R_inv=R_R.inv, eta.hat=eta.hat)
                 Z.t <- Z[(1 + (i - 1) * 2):(i * 
                   2), , drop = FALSE]      
                 temp.t <- Y.t - X.t %*% ybetas
+                if(control$REML.N){
+                  
+                  pattern.sum <- pattern.sum + tcrossprod(temp.t) - 
+                    tcrossprod(temp.t, Z.t %*% eta.hat) - tcrossprod(Z.t %*% 
+                                                                       eta.hat, temp.t) + as.matrix(Z.t%*%temp_mat%*%t(Z.t)) + as.matrix(X.t%*%betacov%*%t(X.t))+2*as.matrix(X.t%*%C12%*%t(Z.t))
+                  
+                   
+                }else{
+                
                 pattern.sum <- pattern.sum + tcrossprod(temp.t) - 
                   tcrossprod(temp.t, Z.t %*% eta.hat) - tcrossprod(Z.t %*% 
                   eta.hat, temp.t) + as.matrix(Z.t%*%temp_mat%*%t(Z.t))
+                }
             }
          pattern.y <- solve(R_i)
          pattern.score<- -ltriangle(((Ny/2) * pattern.y) -(pattern.y %*% pattern.sum %*% pattern.y))
@@ -381,6 +452,7 @@ ybetas2 <- update.ybeta(X=R_X, Y=R_Y, Z=R_Z, R_inv=R_R.inv, eta.hat=eta.hat)
     
 
 Score <- function(thetas) {
+  
 n_ybeta<-length(ybetas2)
 Ny<-length(R_Y)
     ybetas <- thetas[1:n_ybeta]
@@ -392,6 +464,7 @@ Ny<-length(R_Y)
                 R_i)))
             R_inv <- symmpart(suppressMessages(kronecker(suppressMessages(Diagonal(Ny/2)),
                 chol2inv(chol(R_i)))))
+            
     G <- thetas[(n_ybeta+4):length(thetas)]
     G<-kronecker(Diagonal(length(teams)),ltriangle(G))
     #update.eta returns new var.eta with eta and likelihood as attr()
@@ -402,17 +475,19 @@ Ny<-length(R_Y)
               cross_R_Z_j = cross_R_Z_j, Sig.mat2 = Sig.mat2, ybetas2 = ybetas, 
               sigmas2 = sigmas2,R_R.inv=R_R.inv)
     eta <- attr(new.eta, "eta")
+    C12 <- attr(new.eta, "C12")
     eta.hat<-eta
+    betacov <- matrix(attr(new.eta, "betacov"),nrow=length(ybetas))
     var.eta <- var.eta.hat <- new.eta
     eta.hat <- as.vector(eta)
     temp_mat <- var.eta.hat + tcrossprod(eta.hat, eta.hat)
    # temp_mat_R <- attr(new.eta, "h.inv") + tcrossprod(eta.hat,
     #        eta.hat)
     rm(new.eta)
-        A.ybeta <- crossprod(R_X, R_inv) %*% R_X
-        B.ybeta <- crossprod(R_X, R_inv) %*% (R_Y - R_Z %*% eta.hat)
-    score.y <- as.vector(B.ybeta - A.ybeta %*% ybetas)
     score.R <- -pattern.f.score(R.i.parm,ybetas2,R_X,R_Y,R_Z,Ny)
+    A.ybeta <- crossprod(R_X, R_inv) %*%R_X
+    B.ybeta <- crossprod(R_X, R_inv) %*% (R_Y - R_Z %*% eta.hat)
+    score.y <- as.vector(B.ybeta - A.ybeta %*% ybetas)
     
      gam_t_sc <- list()
         index1 <- 0
@@ -441,9 +516,12 @@ Ny<-length(R_Y)
         
       score.G<-ltriangle(score.eta.t)   
    
-
-           
-    -c(score.y, score.R, score.G)
+      if (home.field) {
+        -c(score.y, score.R, score.G)
+      }
+      else {
+        -c(score.R, score.G)
+      }
 }
 
 
@@ -451,15 +529,35 @@ Ny<-length(R_Y)
 
 Hessian<-NULL
 thetas <- c(ybetas2, ltriangle(sigup), reduce.G(G))
+gradient<-Score(thetas)
 if(control$Hessian){
 cat("\nCalculating Hessian with a central difference approximation...\n")
 flush.console()
 
 Hessian <- symmpart(jacobian(Score, thetas, method="simple"))
 #std_errors <- c(sqrt(diag(solve(Hessian))))
-if(class(try(chol(Hessian),silent=TRUE))=="try-error") cat("\nWarning: Hessian not positive-definite\n")
+if(!all(eigen(Hessian)$values>0)) cat("\nWarning: Hessian not positive-definite\n")
 }
 
+
+  c.temp <- crossprod(R_X, R_R.inv) %*% R_Z
+  c.1 <- rbind(crossprod(R_X, R_R.inv) %*% R_X, t(c.temp))
+  G.inv <- chol2inv(chol(G))
+  c.2 <- rbind(c.temp, H.eta(sigmas = sigmas, cross_Z_j = cross_Z_j, Sig.mat = Sig.mat, 
+                             G.inv = G.inv, nyear = nyear, n_eta = n_eta, sigmas2=sigmas2,cross_R_Z_j=cross_R_Z_j,Sig.mat2=Sig.mat2,R_R.inv))
+  C_inv <- cbind(c.1, c.2)
+  C <- solve(C_inv)
+  eblup_stderror <- sqrt(diag(C)[-c(1:ncol(R_X))])
+  ybetas_stderror <- sqrt(diag(C)[1:ncol(R_X)])
+  ybetas_asycov<-C[1:ncol(R_X),1:ncol(R_X)]
+  ybetas_eblup_asycov<-C
+  rm(C, C_inv, c.2, c.1, c.temp)
+  eblup <- as.matrix(cbind(eta.hat, eblup_stderror))
+  eblup <- as.data.frame(eblup)
+  eblup <- as.data.frame(cbind(colnames(R_Z), eblup)) 
+
+  
+ # ybetas_asycov<-ybetas_eblup_asycov<-ybetas_stderror<-c("This feature only enabled for REML.N=TRUE")
 
 
 
@@ -471,7 +569,7 @@ colnames(R.res)<-c("Home","Away")
 R.res.cor<-cov2cor(R.res)
 if(!home.field) ybetas2<-ybetas2[1]
 names(ybetas2)<-colnames(J_X_mat)
-
+N.output<-list(Z=R_Z,Y=R_Y,X=R_X,G=G,R=R_R,eta=eta.hat,var.eta=var.eta.hat,ybetas_eblup_asycov=ybetas_eblup_asycov, ybetas_asycov=ybetas_asycov,ybetas_stderror=ybetas_stderror,gradient=gradient )
 sresid=NULL
 cresid=NULL
     mresid <- try(as.numeric(R_Y - R_X %*% ybetas2))
@@ -481,5 +579,5 @@ cresid=NULL
     yhat.s <- try(as.vector(rchol %*% (yhat)))
     sresid <- try(as.vector(rchol %*% R_Y - yhat.s))
                                                                                                                                                                                                                                                                                                                            
-   res<-list(n.ratings.mov=NULL,n.ratings.offense=eblup[seq(1,2*nteams,by=2),1],n.ratings.defense=eblup[seq(2,2*nteams,by=2),1],p.ratings.offense=NULL,p.ratings.defense=NULL,b.ratings=NULL,n.mean=ybetas2,p.mean=NULL,b.mean=NULL,G=G.res,G.cor=G.res.cor,R=R.res,R.cor=R.res.cor,home.field=home.field,actual=R_Y,pred=R_X%*%ybetas2+R_Z%*%eta.hat,Hessian=Hessian,parameters=thetas,sresid=sresid)
+   res<-list(n.ratings.mov=NULL,n.ratings.offense=eblup[seq(1,2*nteams,by=2),1],n.ratings.defense=eblup[seq(2,2*nteams,by=2),1],p.ratings.offense=NULL,p.ratings.defense=NULL,b.ratings=NULL,n.mean=ybetas2,p.mean=NULL,b.mean=NULL,G=G.res,G.cor=G.res.cor,R=R.res,R.cor=R.res.cor,home.field=home.field,actual=R_Y,pred=R_X%*%ybetas2+R_Z%*%eta.hat,Hessian=Hessian,parameters=thetas,sresid=sresid,N.output=N.output)
 }

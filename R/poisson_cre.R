@@ -217,7 +217,7 @@ jred<- -1*sparse.model.matrix(as.formula(~defense+0),data=J_mat)
 
 J_RE_mat[,seq(1,2*nteams,by=2)]<-jreo
 J_RE_mat[,seq(2,2*nteams,by=2)]<-jred
-if(game.effect) J_RE_mat<-cBind(J_RE_mat,sparse.model.matrix(as.formula(~game+0),data=J_mat))
+if(game.effect) J_RE_mat<-cbind(J_RE_mat,sparse.model.matrix(as.formula(~game+0),data=J_mat))
 J_X_mat <- sparse.model.matrix(j_fixed_effects, J_mat, drop.unused.levels = TRUE)
 
 
@@ -347,9 +347,9 @@ for (it in 1:iter) {
                               if (check.parmFE1 & check.parmFE2 | FE.count > 0) {
               if(indx.5==n_eta) cat("Calculating FE corrections for random effects covariance matrix...\n")
               FE.count <- FE.count + 1
-                    res.temp <- cBind(guide2, mapply(Trace.calc2, comp.k = guide2[, 1], comp.l = guide2[, 2], MoreArgs = list(dsig.dc.indx5, indx.5 = indx.5)))
+                    res.temp <- cbind(guide2, mapply(Trace.calc2, comp.k = guide2[, 1], comp.l = guide2[, 2], MoreArgs = list(dsig.dc.indx5, indx.5 = indx.5)))
                     temp.comp <- temp.comp[-(guide1), , drop = FALSE]
-                    var.corrections <- rBind(var.corrections, res.temp)
+                    var.corrections <- rbind(var.corrections, res.temp)
                     }
    
                   }
@@ -383,7 +383,7 @@ jbetasn <- update.jbetas.first.order(eta = eta, jbetas = jbetas, J_X=J_X, J_Y=J_
       var.eta <- var.eta + 0.5 * trc.y2
       rm(trc.y2)
       var.eta.hat <- var.eta
-      eblup <- as.matrix(cBind(eta.hat, sqrt(diag(var.eta.hat))))
+      eblup <- as.matrix(cbind(eta.hat, sqrt(diag(var.eta.hat))))
       eblup <- round(eblup, 4)
       colnames(eblup) <- c("eblup", "std. error")
       if(!game.effect) rownames(eblup) <- c(rep(teams,each=2))
@@ -454,7 +454,7 @@ jbetasn <- update.jbetas.first.order(eta = eta, jbetas = jbetas, J_X=J_X, J_Y=J_
         it.time <- (proc.time() - ptm)[3]
       time.mat[it, ] <- c(it.time)
       cat("Iteration", it, "took", it.time, "\n")
-      eblup <- cBind(eta.hat, sqrt(diag(var.eta.hat)))
+      eblup <- cbind(eta.hat, sqrt(diag(var.eta.hat)))
       eblup <- round(eblup, 6)
       colnames(eblup) <- c("eblup", "std. error")
       if(!game.effect) rownames(eblup) <- c(rep(teams,each=2))
@@ -558,7 +558,7 @@ Ny<-length(J_Y)
                 score.eta.t <- 2 * der - diag(diag(der))
             }
           der.g <- as.numeric(-0.5 * (Nj * solve(G[n_eta,n_eta]) - solve(G[n_eta,n_eta]) * 
-                sum(diag(temp_mat)[(2*nteams+1):n_eta] * solve(G[n_eta,n_eta]))))
+                sum(diag(temp_mat)[(2*nteams+1):n_eta] * c(solve(G[n_eta,n_eta])))))
   
         score.G<-c(ltriangle(score.eta.t),der.g)   
    
