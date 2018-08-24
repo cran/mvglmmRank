@@ -1,6 +1,6 @@
-94ab221800984d0cec627354395ae5c1 *DESCRIPTION
+6ca163661753079c5199f95316eaf32b *DESCRIPTION
 f0199badffe77237492ae0ecd10d9052 *NAMESPACE
-b6e3744502ced4a75ffee9b3cb8100b3 *NEWS
+2964579a97667f77c2d9e2c2977f9dfd *NEWS
 8dbb8fd00af761a62cd2be56375d9961 *R/NB_cre.R
 e625f0667f527b7cbf7cf0460ff1cc75 *R/NB_mov.r
 9856e6a0fa64ba078013dc2d0f43a56b *R/N_mov.r
@@ -8,7 +8,7 @@ e625f0667f527b7cbf7cf0460ff1cc75 *R/NB_mov.r
 1ec6fafff99fcc11c2c11f42590f3e63 *R/binary_cre.R
 8292b368b4e5ee0702ce56b48baa5c83 *R/game.pred.R
 475a4ec0e40732068d809d550cd367f8 *R/mvglmmRank.R
-07fc6da7d32b053b50fb91ff7a6e1dad *R/normal_cre.R
+5b5342ec40004189ac1a8118535718ea *R/normal_cre.R
 fa9f38580d7b70ba32305b56152ae9de *R/poisson_cre.R
 610970fa0e9f4e5ec90366d47b7a4915 *data/f2008.rda
 61f5f0692f6bb67e41330b1de004288b *data/f2009.rda
@@ -29,7 +29,7 @@ cebcddd8d47ce1fd99fe2f87502ce067 *man/f2010.Rd
 cc1795196b2b447110e58e1904686d52 *man/f2011.Rd
 c0a6769528c7ba93ed6bdca9d42f6184 *man/f2012.Rd
 e41a2a6ca36fe39813100fce8b300023 *man/game.pred.Rd
-53f025aa81e5967e3c766d9e302cf5a7 *man/mvglmmRank-package.Rd
+eac556885c8bac4b99a5dbbae249676c *man/mvglmmRank-package.Rd
 f4f2bac377f56ff128d6287975434633 *man/mvglmmRank.Rd
 6d92d6f0aa561b764ca18c365052cd87 *man/nba2013.Rd
 d47d3a651c209d585f195b0331e49294 *man/ncaab2012.Rd

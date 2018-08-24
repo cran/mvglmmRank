@@ -2,10 +2,10 @@ Package: mvglmmRank
 Type: Package
 Title: Multivariate Generalized Linear Mixed Models for Ranking Sports
         Teams
-Version: 1.2-1
+Version: 1.2-2
 Depends: R (>= 3.2.0), Matrix
 Imports: numDeriv, methods, stats, utils, MASS
-Date: 2018-04-18
+Date: 2018-08-23
 Author: Andrew T. Karl (Adsurgo LLC), Jennifer Broatch (Arizona State University)
 Maintainer: Andrew T. Karl <akarl@asu.edu>
 Description: Maximum likelihood estimates are obtained via an EM algorithm with either a first-order or a fully exponential Laplace approximation. 
@@ -14,6 +14,6 @@ LazyLoad: yes
 LazyData: yes
 License: GPL-2
 NeedsCompilation: no
-Packaged: 2018-04-18 20:04:06 UTC; Andrew
+Packaged: 2018-08-24 04:19:22 UTC; Andrew
 Repository: CRAN
-Date/Publication: 2018-04-19 20:53:52 UTC
+Date/Publication: 2018-08-24 04:40:03 UTC

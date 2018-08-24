@@ -1,3 +1,7 @@
+Version 1.2-2: 2018-08-23
+	
+	- Corrected output of offensive and defensive team ratings when method="N"
+
 Version 1.2-1: 2018-02-12
 	
 	- Added "N.mov" method.

@@ -553,8 +553,9 @@ if(!all(eigen(Hessian)$values>0)) cat("\nWarning: Hessian not positive-definite\
   ybetas_eblup_asycov<-C
   rm(C, C_inv, c.2, c.1, c.temp)
   eblup <- as.matrix(cbind(eta.hat, eblup_stderror))
-  eblup <- as.data.frame(eblup)
-  eblup <- as.data.frame(cbind(colnames(R_Z), eblup)) 
+  #eblup <- as.data.frame(eblup)
+  #eblup <- as.data.frame(cbind(colnames(R_Z), eblup)) 
+  rownames(eblup) <- colnames(R_Z)
 
   
  # ybetas_asycov<-ybetas_eblup_asycov<-ybetas_stderror<-c("This feature only enabled for REML.N=TRUE")
