@@ -5,7 +5,7 @@
 Multivariate Generalized Linear Mixed Models for Ranking Sports Teams
 }
 \description{
-Maximum likelihood estimates are obtained via an EM algorithm with either a first-order or a fully exponential Laplace approximation.
+Maximum likelihood estimates are obtained via an EM algorithm with either a first-order or a fully exponential Laplace approximation. Note that the estimator for the home field effect may be biased, depending on the scheduling structure; see the Karl and Zimmerman (2021) reference.
 }
 \details{
 \tabular{ll}{
@@ -23,7 +23,9 @@ Andrew T. Karl and Jennifer Broatch
 Maintainer: Andrew T. Karl <akarl@asu.edu>
 }
 \references{
-Broatch, J.E. and Karl, A.T. (2017). Multivariate Generalized Linear Mixed Models for Joint Estimation of Sporting Outcomes. \emph{Italian Journal of Applied Statistics}. To appear. Also available from https://arxiv.org/abs/1710.05284.
+Broatch, J.E. and Karl, A.T. (2018). Multivariate Generalized Linear Mixed Models for Joint Estimation of Sporting Outcomes. \emph{Italian Journal of Applied Statistics}. Vol.30, No.2, 189-211. Also available from https://arxiv.org/abs/1710.05284.
+
+Karl, A.T., Zimmerman, D.L. (2021). A Diagnostic for Bias in Linear Mixed Model Estimators Induced by Dependence Between the Random Effects and the Corresponding Model Matrix. \emph{Journal of Statistical Planning and Inference},  211, 107-118. https://doi.org/10.1016/j.jspi.2020.06.004. 
 
 Karl, A.T., Yang, Y. and Lohr, S. (2013). Efficient Maximum Likelihood Estimation of Multiple Membership Linear Mixed Models, with an Application to 
     Educational Value-Added Assessments. \emph{Computational Statistics and Data Analysis},  59, 13-27.

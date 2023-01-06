@@ -11,7 +11,7 @@ This function fits a (multivariate) generalized linear mixed model to team score
 mvglmmRank(game.data, method = "PB0", first.order = FALSE, 
 home.field = TRUE, max.iter.EM = 1000, tol1 = 1e-04, 
 tol2 = 1e-04, tolFE = 0, tol.n = 1e-07, verbose = TRUE, OT.flag = FALSE, 
-Hessian = FALSE, REML.N=FALSE)
+Hessian = FALSE, REML.N=TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -45,7 +45,7 @@ requests a fully exponential Laplace approximation. See the references.
 logical. TRUE requests that seperate home and away mean scores be modeled (along with a mean 
 neutral site score, if applicable) along with a single home field effect in the binary model. 
 FALSE requests only a single mean be calculated for the scores, and no fixed effects are fit for the
-binary win/loss indicators.
+binary win/loss indicators. Note that the estimator for the home field effect may be biased, depending on the scheduling structure; see the Karl and Zimmerman (2021) reference.
 }
   \item{max.iter.EM}{
 a number giving the maximum number of EM iterations.
@@ -116,12 +116,14 @@ An object of class \code{mvglmmRank} is a list containing the following componen
 \item{parameters}{A vector of fitted model parameters.}
 \item{N.output}{\code{NULL}, or a list if \code{method="N"} or \code{method="N.mov"}. In the later cases, the list contains the random effect design matrix \code{Z},
 the fixed effects design matrix \code{X}, the esitmated random effects covariance matrix \code{G}, the estimated error covariance matrix \code{R}, the predicted random effects \code{eta}, the joint covariance matrix of fixed and random effects \code{ybetas_eblup_asycov}, the covariance matrix of the fixed effects only \code{ybetas_asycov}, and the standard errrors of the fixed effects \code{ybetas_stderror}.}
-\item{fixed.effect.model.output}{\code{NULL}, or a list if \code{method="N.mov"}. In the later case, the list contains information about the results of fitting the margin of victory model with fixed (instead of random) team effects: the fixed effect design matrix \code{X}, the fixed effect parameter estimates \code{beta}, logical indicating whether or not the home field effect is estimable \code{is.mean.estimable} (see Notes), the predicted margins of victory \code{pred}, the residuals \code{resid}, the fitted model variance \code{sigma.sq}, and the covariance matrix of the random effects \code{beta.covariance}.  }
+\item{fixed.effect.model.output}{\code{NULL}, or a list if \code{method="N.mov"}. In the later case, the list contains information about the results of fitting the margin of victory model with fixed (instead of random) team effects: the fixed effect design matrix \code{X}, the fixed effect parameter estimates \code{beta}, logical indicating whether or not the home field effect is estimable \code{is.mean.estimable} (see Notes), the predicted margins of victory \code{pred}, the residuals \code{resid}, the fitted model variance \code{sigma.sq}, and the covariance matrix of the random effects \code{beta.covariance}. This can provide an unbiased estimate when the estimator from the mixed model is biased (Karl and Zimmerman, 2021). }
 
 The function  \code{\link{game.pred}} may be used to predict the outcome of future games.
 }
 \references{
-Broatch, J.E. and Karl, A.T. (2017). Multivariate Generalized Linear Mixed Models for Joint Estimation of Sporting Outcomes. \emph{Italian Journal of Applied Statistics}. To appear. Also available from https://arxiv.org/abs/1710.05284.
+Broatch, J.E. and Karl, A.T. (2018). Multivariate Generalized Linear Mixed Models for Joint Estimation of Sporting Outcomes. \emph{Italian Journal of Applied Statistics}. Vol.30, No.2, 189-211. Also available from https://arxiv.org/abs/1710.05284.
+
+Karl, A.T., Zimmerman, D.L. (2021). A Diagnostic for Bias in Linear Mixed Model Estimators Induced by Dependence Between the Random Effects and the Corresponding Model Matrix. \emph{Journal of Statistical Planning and Inference},  211, 107-118. https://doi.org/10.1016/j.jspi.2020.06.004. 
 
 Karl, A.T., Yang, Y. and Lohr, S. (2013). Efficient Maximum Likelihood Estimation of Multiple Membership Linear Mixed Models, with an Application to 
     Educational Value-Added Assessments. \emph{Computational Statistics and Data Analysis},  59, 13-27.

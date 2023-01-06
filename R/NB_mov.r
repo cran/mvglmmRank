@@ -622,7 +622,7 @@ flush.console()
 Hessian <- symmpart(jacobian(Score, thetas, method="simple"))
 rownames(Hessian)<-colnames(Hessian)<-names(thetas)
 #std_errors <- c(sqrt(diag(solve(Hessian))))
-if(class(try(chol(Hessian),silent=TRUE))=="try-error") cat("\nWarning: Hessian not positive-definite\n")
+if(inherits(try(chol(Hessian),silent=TRUE), "try-error")) cat("\nWarning: Hessian not positive-definite\n")
 }
 
 

@@ -1,8 +1,8 @@
 mvglmmRank <-
 function (game.data, method = "PB0",first.order = FALSE, home.field=TRUE, max.iter.EM = 1000, 
-    tol1 = 1e-04, tol2 = 1e-04, tolFE = 0, tol.n = 1e-07, verbose = TRUE,OT.flag=FALSE,Hessian=FALSE,REML.N=FALSE) 
+    tol1 = 1e-04, tol2 = 1e-04, tolFE = 0, tol.n = 1e-07, verbose = TRUE,OT.flag=FALSE,Hessian=FALSE,REML.N=TRUE) 
 {
-    if (class("method") != "character") {
+    if (!inherits(class("method"), "character")) {
         cat("*Error: method must be a character string (using quotation marks)")
         flush.console()
         return(0)

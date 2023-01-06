@@ -1,3 +1,9 @@
+Version 1.2-3: 2023-01-03
+	
+	- Added paper reference about potential bias in the home field effect estimates
+	
+	- Changed default for REML.N to TRUE
+	
 Version 1.2-2: 2018-08-23
 	
 	- Corrected output of offensive and defensive team ratings when method="N"
