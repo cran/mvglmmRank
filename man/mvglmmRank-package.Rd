@@ -5,14 +5,14 @@
 Multivariate Generalized Linear Mixed Models for Ranking Sports Teams
 }
 \description{
-Maximum likelihood estimates are obtained via an EM algorithm with either a first-order or a fully exponential Laplace approximation. Note that the estimator for the home field effect may be biased, depending on the scheduling structure; see the Karl and Zimmerman (2021) reference.
+Maximum likelihood estimates are obtained via an EM algorithm with either a first-order or a fully exponential Laplace approximation as documented by Broatch and Karl (2018), Karl, Yang, and Lohr (2014), and by Karl (2012). Karl and Zimmerman use this package to illustrate how the home field effect estimator from a mixed model can be biased under nonrandom scheduling.
 }
 \details{
 \tabular{ll}{
 Package: \tab mvglmmRank\cr
 Type: \tab Package\cr
-Version: \tab 1.2-2\cr
-Date: \tab 2018-08-23\cr
+Version: \tab 1.2-4\cr
+Date: \tab 2023-01-06\cr
 License: \tab GPL-2\cr
 }
 See the help pages for mvglmmRank and game.pred

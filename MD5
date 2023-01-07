@@ -1,6 +1,6 @@
-97dc020ebf5e93a62f4e51d18f001966 *DESCRIPTION
+eb5944589cb247c3c9aec6fbf2534eb2 *DESCRIPTION
 f0199badffe77237492ae0ecd10d9052 *NAMESPACE
-98d2cf2c359de0b2cedefd616dd90548 *NEWS
+4d98196a891c7070b27ce00807e2486a *NEWS
 eaa07559f5d9f2a2a9dbda34ee6ee93a *R/NB_cre.R
 1dd374341504c00279ca857f5a260af6 *R/NB_mov.r
 9856e6a0fa64ba078013dc2d0f43a56b *R/N_mov.r
@@ -29,7 +29,7 @@ cebcddd8d47ce1fd99fe2f87502ce067 *man/f2010.Rd
 cc1795196b2b447110e58e1904686d52 *man/f2011.Rd
 c0a6769528c7ba93ed6bdca9d42f6184 *man/f2012.Rd
 e41a2a6ca36fe39813100fce8b300023 *man/game.pred.Rd
-9bf527cecd472dd9e18cede953c3fb83 *man/mvglmmRank-package.Rd
+4fd2ac1176322ae81486c99de405331a *man/mvglmmRank-package.Rd
 880ea5d0a0fc4a4f7fcd22bfb4b253e5 *man/mvglmmRank.Rd
 6d92d6f0aa561b764ca18c365052cd87 *man/nba2013.Rd
 d47d3a651c209d585f195b0331e49294 *man/ncaab2012.Rd
